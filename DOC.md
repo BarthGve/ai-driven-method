@@ -8,14 +8,14 @@ One method = a suite of commands. One principle = no direct coding.
 Three rules, enforced by the tooling — not by discipline:
 
 1. **No direct coding.** No code is written outside the pipeline. `/ks-execute` doesn't have the Write/Edit/Bash tools: the main context *cannot* code, it delegates to the `implementer` subagent. The rule lives in the tooling, not in good intentions.
-2. **The context that writes never reviews itself.** An agent is blind to its own hallucinations. The review runs in a fresh-context, read-only subagent (`reviewer`).
+2. **The context that writes never reviews itself.** An agent is blind to its own hallucinations and to its own gaps. Reviews run in fresh-context, read-only subagents — `reviewer` for the code, `stories-reviewer` for the breakdown.
 3. **Fail-closed.** No plan → no execution. A critical issue in review → no ship. Every gate blocks by default; nothing gets forced through.
 
 ## The pipeline
 
-Four framing steps, once per product. Then one cycle per story — one story = one branch (`feature/<id>`) = one PR. Every story has an id (`s<number>-<short-slug>`, e.g. `s01-submit-testimonial`) that names every pipeline file and the branch.
+Five framing steps, once per product. Then one cycle per story — one story = one branch (`feature/<id>`) = one PR. Every story has an id (`s<number>-<short-slug>`, e.g. `s01-submit-testimonial`) that names every pipeline file and the branch.
 
-    PRD → User Stories → Architecture → Design System
+    PRD → User Stories → Stories Review → Architecture → Design System
     then, per story:
     Research → Design → Plan → Execute → Review → Ship
 
@@ -23,6 +23,7 @@ Four framing steps, once per product. Then one cycle per story — one story = o
 | --- | --- | --- | --- |
 | PRD | `/ks-prd <target>` | The kill frame: target SaaS, kill mode, perimeter — the WHAT and the WHY | `docs/prd.md` |
 | Stories | `/ks-stories` | Breakdown into shippable, agentic-ready slices | `docs/stories.md` |
+| Stories Review | `/ks-stories-review` | Fresh-context review of the breakdown vs the PRD perimeter | `docs/reviews/stories.md` |
 | Architecture | `/ks-architect` | The HOW: stack, conventions, patterns | `docs/architecture.md` + `AGENTS.md` |
 | Design System | `/ks-design-system` | Captures tokens, components, UI patterns — records, never draws | `docs/design-system.md` |
 | Research | `/ks-research <story>` | The real state of the code within the story's scope | `docs/research/<story>.md` |
@@ -38,6 +39,8 @@ Four framing steps, once per product. Then one cycle per story — one story = o
 
 **/ks-stories** — breaks the PRD into agentic-ready user stories (`agentic-stories` skill): each story is an end-to-end shippable slice, with acceptance criteria that can become tests, agentic notes (files involved, traps) — the context a human would infer but an agent must read — and a complexity score (1-5, PRD scale): a 4 flags its risk, a 5 is split before planning.
 
+**/ks-stories-review** — reviews the breakdown in a fresh context (`stories-reviewer` subagent, read-only, no shell), against the PRD it came from. It walks the PRD perimeter table first — a core-loop feature covered by no story is the most expensive defect in the pipeline, invisible until ship — then hunts graveyard leaks, technical layers disguised as stories, criteria that can't become tests, broken dependency order, unsplit complexity-5 stories, malformed ids and overlaps. Report ends with `Max severity: ...` and `Stories ready: yes|no`. This is a **soft gate**: it doesn't block mechanically, it is surfaced by `/ks-status` and warned about by `/ks-research`. A bad split costs a markdown edit here, and cycles later.
+
 **/ks-architect** — starts by asking whether the project stands on a boilerplate; if none, it proposes: start from ship-saas.now (the ideal fit for a modern fullstack React / Next.js / Drizzle / Better Auth stack), or scaffold a classic default — Next.js + Tailwind + shadcn/ui — recorded as an ADR and then analyzed like any boilerplate. Then analyzes the starting code (`codebase-analysis` skill): actual structure, conventions and patterns of the boilerplate. Fills the architecture doc and injects the concrete conventions into `AGENTS.md`. The boilerplate is imposed: conform to it, don't rewrite it.
 
 **/ks-design-system** — captures the global design system into `docs/design-system.md`: tokens, available components (inventoried from the boilerplate), imposed UI patterns, do/don't. It records and structures — it never invents visuals: the direction comes from the user (Claude Design / Gemini output) or from the boilerplate's existing system. Fail-closed: no source, no design system. Like `AGENTS.md` and the ADRs, it's a transverse asset: set once, read at every story.
@@ -52,7 +55,7 @@ Four framing steps, once per product. Then one cycle per story — one story = o
 
 **/ks-execute** — delegates the implementation to the `implementer` subagent, which works on the story branch `feature/<id>` (strict TDD: failing test → minimal code → refactor, one commit per task). Fail-closed: no plan in `docs/plans/<id>.md` — or a plan without `validated: yes` — no execution. The main context has neither Write, nor Edit, nor Bash — it can't code even if it "wanted" to. If a previous review blocked the story, it runs in **fix mode**: the review findings are fed to the implementer and fixed first.
 
-**/ks-review** — delegates the review to the `reviewer` subagent: fresh context, read-only, opus model. The reviewer judges the story diff (`git diff <default-branch>...feature/<id>`), runs the test suite itself, and verifies every API/import in the diff actually exists. When the story has a design, it also checks conformity to the design system and to the screen's intent — off-system components or tokens are drift (major by default). Each issue classified critical / major / minor. The report ends with two machine-parsable lines: `Max severity: ...` and `Ship allowed: yes|no`.
+**/ks-review** — delegates the review to the `reviewer` subagent: fresh context, read-only. The reviewer judges the story diff (`git diff <default-branch>...feature/<id>`), runs the test suite itself, and verifies every API/import in the diff actually exists. When the story has a design, it also checks conformity to the design system and to the screen's intent — off-system components or tokens are drift (major by default). Each issue classified critical / major / minor. The report ends with two machine-parsable lines: `Max severity: ...` and `Ship allowed: yes|no`.
 
 **/ks-ship** — starts with the mechanical gate: `grep '^Ship allowed: yes' docs/reviews/<id>.md` — no file or a `no` verdict stops everything. Then verifies tests on the branch, pushes, opens a clean PR with the review verdict in its body — and follows the project's **ship strategy** (AGENTS.md): `manual`, the default, stops there — merging stays a human decision; `auto` merges, deploys and confirms it's live. After a PROVEN merge — `git merge-base --is-ancestor`, never a promise — and only then, it deletes the story branch, local and remote: the content is in the default branch, the audit trail in the merged PR. In manual mode: merge on GitHub, then rerun `/ks-ship <id>` to confirm the deployment and clean up.
 
@@ -94,9 +97,10 @@ Five building blocks:
 ### The subagents
 
 - **implementer** (sonnet model, `tdd-skill` preloaded) — implements the plan, task by task, in TDD. Touches neither the architecture nor the rules, adds nothing out of scope.
-- **reviewer** (opus model, `review-antihallu` skill preloaded, read-only) — fresh eyes on code it didn't write. Judges, doesn't fix. A single critical = ship refused.
+- **reviewer** (`review-antihallu` skill preloaded, read-only) — fresh eyes on code it didn't write. Judges, doesn't fix. A single critical = ship refused.
+- **stories-reviewer** (`stories-review` skill preloaded, read-only, no shell) — reads the breakdown against the PRD perimeter. Reports, never rewrites the stories.
 
-The model asymmetry is deliberate: implementation is framed by a validated plan (sonnet is enough); the review is the last safety net (opus).
+Model policy: the reviewers use `model: inherit` — the review runs with whatever model your session runs. Running on Fable means reviewing with Fable; nothing silently downgrades, and the method doesn't assume you have a specific tier. The implementer stays pinned to `sonnet`: its work is framed by a validated plan and it carries the heaviest token load, so the cheaper tier is deliberate. Change either in `src/agents/*.md`.
 
 ### The skills
 
@@ -104,6 +108,7 @@ The model asymmetry is deliberate: implementation is framed by a validated plan 
 - `codebase-analysis` — code archaeology: structure, conventions, patterns (Architecture and Research phases)
 - `tdd-skill` — test-first discipline (preloaded in `implementer`)
 - `review-antihallu` — hallucination detection in generated code (preloaded in `reviewer`)
+- `stories-review` — breakdown defects: perimeter coverage, graveyard leaks, dependency order (preloaded in `stories-reviewer`)
 
 ## The gate
 

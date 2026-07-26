@@ -4,7 +4,7 @@ A complete agentic pipeline to kill a SaaS: pick a target, cut the 20% that matt
 One method = a suite of commands. One principle = no direct coding.
 
 ## Pipeline
-PRD → User Stories → Architecture + Design System → then, per story: Research → Design → Plan → Execute → Review → Ship
+PRD → User Stories → Stories Review → Architecture + Design System → then, per story: Research → Design → Plan → Execute → Review → Ship
 
 ![killer-saas pipeline overview](docs/images/pipeline-overview-dark.png)
 
@@ -81,6 +81,7 @@ What it does — and doesn't:
 
     /ks-prd <target-saas>
     /ks-stories
+    /ks-stories-review
     /ks-architect
     /ks-design-system
     # then, per story:

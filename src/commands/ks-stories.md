@@ -21,4 +21,4 @@ Proceed as follows:
 3. Order the stories by dependency: no story may assume work not yet done.
 4. Write the result to `docs/stories.md` and commit it on the default branch (docs: stories).
 
-End with: "Stories ready in docs/stories.md. Next step: /ks-architect"
+End with: "Stories ready in docs/stories.md. Next step: /ks-stories-review"

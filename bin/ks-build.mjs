@@ -88,11 +88,14 @@ function codexSkillFromAgent(name, text, outSkillsDir) {
   const model = fmScalar(fm, "model");
   const skillDir = join(outSkillsDir, name);
   ensureDir(skillDir);
-  const modelNote = model
-    ? `> Run this in an isolated subagent. On Claude this pins model \`${model}\`; ` +
-      `on Codex choose an equivalent (fast coder for implementer, strong reviewer for reviewer). ` +
-      `Read-only / tool restrictions are advisory here — the git hooks hold the gate.\n\n`
-    : "";
+  const modelNote = !model
+    ? ""
+    : model === "inherit"
+      ? `> Run this in an isolated subagent, using your current session model. ` +
+        `Read-only / tool restrictions are advisory here — the git hooks hold the gate.\n\n`
+      : `> Run this in an isolated subagent. On Claude this pins model \`${model}\`; ` +
+        `on Codex choose an equivalent (a fast coder tier is enough — the plan is validated). ` +
+        `Read-only / tool restrictions are advisory here — the git hooks hold the gate.\n\n`;
   const skillFm = `---\nname: ${name}\ndescription: ${description}\n---\n`;
   writeFileSync(join(skillDir, "SKILL.md"), skillFm + modelNote + derefInjections(body));
 }

@@ -2,7 +2,7 @@
 name: reviewer
 description: Anti-hallucination review of the implementer's work, fresh context, read-only. Invoked by /ks-review.
 tools: Read, Grep, Glob, Bash
-model: opus
+model: inherit
 skills:
   - review-antihallu
 ---

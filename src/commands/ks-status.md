@@ -10,7 +10,7 @@ allowed-tools:
 
 Derive the state from the files — never guess. Bash is for read-only git queries here.
 
-1. Framing: do docs/prd.md, docs/stories.md, docs/architecture.md, docs/design-system.md exist? A missing one is the next step.
+1. Framing: do docs/prd.md, docs/stories.md, docs/architecture.md, docs/design-system.md exist? A missing one is the next step. Also grep '^Stories ready:' docs/reviews/stories.md → yes / no / none, and show it on the framing line (a `no` or a missing review means the breakdown hasn't passed /ks-stories-review).
 2. Stories: list the ids from docs/stories.md. For each id derive:
    - complexity: the story's score (from docs/stories.md) — show it next to the id.
    - research: docs/research/<id>.md exists?

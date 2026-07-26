@@ -12,6 +12,8 @@ You are exploring a story's context before it gets planned. Target story: $ARGUM
 
 Resolve $ARGUMENTS to the story id (`s<number>-<slug>`) against docs/stories.md. If there is no unambiguous match, list the available stories and stop.
 
+If docs/reviews/stories.md is missing, or says `Stories ready: no`, say so: the breakdown hasn't passed /ks-stories-review, so this story may not match the PRD perimeter. Continue only if I confirm — this is a warning, not a block.
+
 Read: docs/stories.md (the target story), docs/architecture.md, AGENTS.md
 Output structure: @templates/research.md
 

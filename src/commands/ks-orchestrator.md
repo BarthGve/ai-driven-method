@@ -21,6 +21,7 @@ The orchestrator drives one story's cycle — it never replaces the framing. Che
 1. docs/prd.md exists? Missing → STOP: "No PRD — the pipeline starts with /ks-prd <target>. Nothing to orchestrate yet."
 2. docs/stories.md exists? Missing → STOP: "No stories — run /ks-stories first."
 3. docs/architecture.md exists? Missing → STOP: "No architecture — run /ks-architect first."
+4. docs/reviews/stories.md says `Stories ready: yes`? If missing or negative, warn (don't stop): the breakdown hasn't passed /ks-stories-review.
 (docs/design-system.md is not required here: Phase 2 fail-closes on it only when the story has UI.)
 
 Then resolve $ARGUMENTS to the story id (`s<number>-<slug>`) against docs/stories.md. No unambiguous match → list the available stories and stop. Never invent a framing doc or a story to keep going.
