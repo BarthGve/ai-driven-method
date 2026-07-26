@@ -163,7 +163,7 @@ install_target() {
 case "$MODE" in
   ""|--project)
     install_target "$TARGET"
-    [ "$HOOKS" = 1 ] && install_hooks
+    if [ "$HOOKS" = 1 ]; then install_hooks; fi
     ;;
 
   -g|--global)
@@ -195,13 +195,13 @@ case "$MODE" in
     sync_templates "$local_src"; drop_agents_md "$local_src"
     case "$TARGET" in claude|all) wire_claude_md ;; esac   # CLAUDE.md seulement si Claude est cible
     echo "✅ templates + rules ajoutés à $(pwd) (cible $TARGET)"
-    [ "$HOOKS" = 1 ] && install_hooks
+    if [ "$HOOKS" = 1 ]; then install_hooks; fi
     ;;
 
   update)
     install_target "$TARGET"
     echo "✅ killer-saas mis à jour ($TARGET, version $VERSION). AGENTS.md jamais touché — fusionne à la main si les rules ont évolué."
-    [ "$HOOKS" = 1 ] && install_hooks
+    if [ "$HOOKS" = 1 ]; then install_hooks; fi
     ;;
 
   *)
