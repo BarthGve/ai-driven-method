@@ -30,7 +30,7 @@ If you can't invoke the Agent tool, stop and report the error. Don't improvise.
 Invoke the Agent tool:
 - subagent_type: implementer
 - description: Implement story <id> in TDD
-- prompt: Implement story <id> from docs/plans/<id>.md, following docs/architecture.md and AGENTS.md. Work on branch feature/<id> — create it from the default branch if it doesn't exist, check it out otherwise; never commit to the default branch. Strict TDD, task by task: failing test → code → passing test, atomic commit. Implement only what the plan specifies. The tdd-skill is preloaded in your context.
+- prompt: Implement story <id> from docs/plans/<id>.md, following docs/architecture.md and AGENTS.md. Work on branch feature/<id> — create it from the default branch if it doesn't exist, check it out otherwise; never commit to the default branch. Strict TDD, task by task: failing test → code → passing test, checkbox ticked. One single commit at the end of the story, carrying the story docs and every task — never one commit per task. Implement only what the plan specifies. The tdd-skill is preloaded in your context.
 - On a FIX run, prepend to the prompt: This story was blocked in review. Fix every critical and major finding from docs/reviews/<id>.md first, test-first, then finish any unimplemented plan task.
 
 Wait for the agent to finish. Capture its summary.

@@ -9,13 +9,13 @@ For each task in the plan:
 2. Run it and watch it fail. This step is not optional: a test you never saw fail proves nothing.
 3. Write the minimum code to make it pass.
 4. Run the suite. Refactor if needed, tests always green.
-5. Atomic commit: one task, its test, its code.
+5. Tick the task's checkbox in the plan. No commit here.
 
 Rules:
 - No production code without a test motivating it.
 - Test behavior, not implementation: assert what the user gets, not which internal function got called.
 - Minimal scope: YAGNI. Implement the task, nothing more.
-- One commit per task, tests green at commit. The commit also ticks the task's checkbox in the plan file — the plan is the live progress tracker.
+- One commit per story, not per task, tests green at commit. It carries the code of every task and the plan file with its checkboxes ticked — the plan is the live progress tracker, never a commit trigger.
 
 Failure modes — and what to do:
 - The new test passes immediately → it doesn't test the new behavior. Rewrite the test, not the code.

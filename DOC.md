@@ -100,7 +100,7 @@ Five building blocks:
 - **reviewer** (`review-antihallu` skill preloaded, read-only) — fresh eyes on code it didn't write. Judges, doesn't fix. A single critical = ship refused.
 - **stories-reviewer** (`stories-review` skill preloaded, read-only, no shell) — reads the breakdown against the PRD perimeter. Reports, never rewrites the stories.
 
-Model policy: the reviewers use `model: inherit` — the review runs with whatever model your session runs. Running on Fable means reviewing with Fable; nothing silently downgrades, and the method doesn't assume you have a specific tier. The implementer stays pinned to `sonnet`: its work is framed by a validated plan and it carries the heaviest token load, so the cheaper tier is deliberate. Change either in `src/agents/*.md`.
+Model policy: the reviewers use `model: inherit` — the review runs with whatever model your session runs. Running on Fable means reviewing with Fable; nothing silently downgrades, and the method doesn't assume you have a specific tier. The implementer is pinned to `opus`: TDD over a full story is the longest, most demanding run of the cycle, and a cheaper tier costs more in round-trips than it saves per token. Change either in `src/agents/*.md`.
 
 ### The skills
 

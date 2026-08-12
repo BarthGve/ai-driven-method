@@ -94,7 +94,7 @@ function codexSkillFromAgent(name, text, outSkillsDir) {
       ? `> Run this in an isolated subagent, using your current session model. ` +
         `Read-only / tool restrictions are advisory here — the git hooks hold the gate.\n\n`
       : `> Run this in an isolated subagent. On Claude this pins model \`${model}\`; ` +
-        `on Codex choose an equivalent (a fast coder tier is enough — the plan is validated). ` +
+        `on Codex choose an equivalent tier. ` +
         `Read-only / tool restrictions are advisory here — the git hooks hold the gate.\n\n`;
   const skillFm = `---\nname: ${name}\ndescription: ${description}\n---\n`;
   writeFileSync(join(skillDir, "SKILL.md"), skillFm + modelNote + derefInjections(body));
