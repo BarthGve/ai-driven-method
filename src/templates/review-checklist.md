@@ -5,6 +5,7 @@
 
 ## Plan compliance
 - [ ] The code does what the plan specifies, nothing more
+- [ ] Run interdicts respected — each one checked and named
 
 ## Anti-hallucination
 - [ ] No invented API/function/import (each one opened and verified)
@@ -19,12 +20,18 @@
 ## Tests
 - [ ] Test suite run by the reviewer, passing
 - [ ] Assertions pin the acceptance criteria (no assertion-free tests)
+- [ ] Bite proven by neutralization: <what was neutralized> → <N> tests red, restored (`git diff --exit-code` clean)
 
 ## Regressions
 - [ ] No impact on existing code paths
 
 ## Findings
 <one line per issue: severity — file — what's wrong>
+
+## Not verified
+<what this review could NOT check, and why: no browser, no database, no real third-party call.
+ Name the concrete gestures a human should make — the screen to open, the button to click, the
+ device to test on. A review that lists nothing here is claiming it saw everything.>
 
 ## Verdict
 Max severity: <critical | major | minor | none>
