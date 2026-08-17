@@ -21,6 +21,7 @@
 - [ ] Test suite run by the reviewer, passing
 - [ ] Assertions pin the acceptance criteria (no assertion-free tests)
 - [ ] Bite proven by neutralization: <what was neutralized> → <N> tests red, restored (`git diff --exit-code` clean)
+- [ ] Tests the story made redundant are named and removed — or their absence justified
 
 ## Regressions
 - [ ] No impact on existing code paths
