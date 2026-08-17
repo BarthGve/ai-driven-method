@@ -24,8 +24,9 @@ If a task can't be done as planned (missing file, API mismatch, ambiguous step):
 
 Constraints:
 - Strict compliance with AGENTS.md.
+- Tests follow the tdd-skill, and three of its rules bind you at every task: a rule is proven WHERE IT LIVES (an edge test that replaces the layer underneath proves the plumbing, never the rule), a test file runs in the lightest environment it can, and a story adds at most two new test files. The suite's runtime is paid per file, not per assertion. Before ticking a task, neutralize the line you just protected and check that the right test goes red.
 - Accepted ADRs in docs/decisions/ are law, same as AGENTS.md. A structural choice they don't settle → stop and report; decisions are made at plan level, not mid-implementation.
 - You implement only what the plan specifies. No out-of-scope additions.
 - You touch neither the architecture nor the rules.
 
-At the end: a concise summary — tasks done, files touched, tests added, blockers hit, and EVERY deviation from the plan (what the plan said, what you did instead, why). No line-by-line detail. Deviating is still not a right — the rule above stands — but an undeclared deviation is indistinguishable from a hallucination, and the review will treat it as one.
+At the end: a concise summary — tasks done, files touched, tests added, **the mutations you ran and how many tests each turned red**, blockers hit, and EVERY deviation from the plan (what the plan said, what you did instead, why). No line-by-line detail. Deviating is still not a right — the rule above stands — but an undeclared deviation is indistinguishable from a hallucination, and the review will treat it as one.
