@@ -5,11 +5,40 @@ One method = a suite of commands. One principle = no direct coding.
 
 ## Philosophy
 
-Three rules, enforced by the tooling — not by discipline:
+Three rules define the normal feature pipeline, enforced by the tooling — not by discipline:
 
 1. **No direct coding.** No code is written outside the pipeline. `/ks-execute` doesn't have the Write/Edit/Bash tools: the main context *cannot* code, it delegates to the `implementer` subagent. The rule lives in the tooling, not in good intentions.
 2. **The context that writes never reviews itself.** An agent is blind to its own hallucinations and to its own gaps. Reviews run in fresh-context, read-only subagents — `reviewer` for the code, `stories-reviewer` for the breakdown.
 3. **Fail-closed.** No plan → no execution. A critical issue in review → no ship. Every gate blocks by default; nothing gets forced through.
+
+### Quick Fix mode
+
+`Quick Fix` is the explicit, user-requested exception for a small, local,
+well-understood, and easily reversible adjustment with no architectural or
+business impact. The primary agent announces the exact scope, edits directly,
+keeps the diff minimal, and performs a proportionate focused verification. TDD
+and a fresh-context subagent review remain available but are not mandatory.
+
+It is not a shortcut for features or uncertain work. Changes involving shared
+redesigns, data, APIs, authorization, security, business rules, persistence,
+dependencies, or cross-cutting refactors return to the normal pipeline before
+coding continues. A subagent may investigate or review a Quick Fix, but the
+primary agent owns its implementation and must coordinate to prevent concurrent
+edits to the same files or targets.
+
+### Editing the workflow rules
+
+`src/AGENTS.md` is the sole tracked source of truth for shared workflow rules.
+Maintainers edit that file, never the root `AGENTS.md` produced by a local test
+installation. Rules must not be copied into `CLAUDE.md`: Claude's project file
+stays a one-line `@AGENTS.md` import so Claude and Codex always read the same
+rules.
+
+After changing the workflow, build both targets with `bin/ks-build.mjs` and test
+the relevant installer path. New installs receive `src/AGENTS.md`; updates never
+overwrite a project's existing `AGENTS.md`, so evolved rules must be merged into
+already-installed projects deliberately. Root `AGENTS.md` and `CLAUDE.md` in
+this repository are ignored local installation artifacts, not editable sources.
 
 ## The pipeline
 
@@ -169,5 +198,3 @@ So "no code without a validated plan" and "no ship without a passed review" hold
 ## v0 status
 
 The structure is public, the valuable content is private. The `<< IP Mike >>` zones (boilerplate conventions, story granularity, anti-hallucination heuristics, severity thresholds) are intentionally empty in this version: they receive the proprietary content outside this repo.
-
-

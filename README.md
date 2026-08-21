@@ -3,6 +3,12 @@
 A complete agentic pipeline to kill a SaaS: pick a target, cut the 20% that matters, rebuild it on your boilerplate, ship it to production.
 One method = a suite of commands. One principle = no direct coding.
 
+Small presentation or copy adjustments can use the explicit **Quick Fix**
+exception when the user requests it. The primary agent edits directly, keeps the
+scope narrow, and verifies the result. If the impact is architectural, business,
+cross-cutting, or uncertain, the normal pipeline remains mandatory. See
+[DOC.md](DOC.md#quick-fix-mode) for the complete boundary.
+
 ## Pipeline
 PRD → User Stories → Stories Review → Architecture + Design System → then, per story: Research → Design → Plan → Execute → Review → Ship
 
@@ -48,6 +54,11 @@ After a global install, drop the per-project files (templates + rules) in each p
     ~/.claude/killer-saas/install.sh init --target codex  # Codex
 
 `AGENTS.md` (the rules) is shared and read natively by both tools; on Claude a one-line `CLAUDE.md` imports it. The 4 skills are the open `SKILL.md` standard, so they carry over unchanged; the 13 `ks-*` commands are emitted as Codex skills. Gemini CLI is planned next — see the fidelity matrix in [DOC.md](DOC.md).
+
+When maintaining killer-saas itself, edit only `src/AGENTS.md`. The root
+`AGENTS.md` and `CLAUDE.md` are ignored local-install artifacts; `CLAUDE.md`
+must remain a one-line `@AGENTS.md` import. See
+[Editing the workflow rules](DOC.md#editing-the-workflow-rules).
 
 ### Repo-level enforcement (git hooks)
 

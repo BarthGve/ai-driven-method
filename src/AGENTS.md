@@ -7,6 +7,40 @@ PRD → User Stories → Architecture (+ Design System) → then, per story: Res
 
 No code is written before the story has a validated plan (`/ks-plan`). No feature ships before a passed review (`/ks-review`).
 
+### Quick Fix mode — exception to the pipeline
+
+`Quick Fix` is the explicit exception for a small, local, well-understood, and
+easily reversible adjustment. It applies only when the user explicitly requests
+a Quick Fix. The primary agent implements it directly, without the full
+killer-saas pipeline and without mandatory TDD. It must not delegate
+implementation to a subagent; a subagent may be used only for read-only
+investigation or optional review.
+
+Typical Quick Fixes include:
+
+- changing a color, spacing, radius, font size, or button style;
+- correcting short UI copy or a translation;
+- making a small layout alignment or responsive adjustment;
+- restoring or adjusting an already-existing presentation affordance;
+- another similarly narrow change with no architectural or business impact.
+
+Quick Fix mode does **not** apply to a new feature, shared-component redesign,
+data model or migration, API or contract change, authorization, security,
+business rules, persistence, cross-cutting refactor, dependency change, or any
+change whose impact is uncertain. If the requested Quick Fix is too large or
+investigation reveals one of these, the primary agent must stop Quick Fix mode,
+recommend using the normal pipeline, and must not continue coding until the work
+has passed the appropriate pipeline stages.
+
+The primary agent must announce Quick Fix mode and its exact scope before
+editing, keep the diff minimal, preserve existing abstractions, and perform a
+proportionate verification (at minimum a focused lint, typecheck, existing test,
+or visual browser check when applicable). TDD and subagent review are optional,
+not forbidden. Quick Fix work must still happen on the currently authorized
+branch/worktree. Before editing, the primary agent must verify that no other
+agent is editing the same files or targets. If work overlaps, coordinate
+ownership or stop; never make concurrent edits to the same targets.
+
 ## Pipeline (commands)
 - `/ks-prd`        frames the kill: target SaaS, kill mode, perimeter (WHAT + WHY)
 - `/ks-stories`    breaks it down into shippable user stories
