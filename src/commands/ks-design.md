@@ -7,10 +7,17 @@ allowed-tools:
   - Grep
   - Write
   - AskUserQuestion
+  - Bash
 ---
 # ks-design — Story design, anchored to the design system
 
 Target story: $ARGUMENTS
+
+Resolve the story id, then locate its dedicated `.worktrees/<id>` worktree.
+Before any read or write, verify that it is on exactly `feature/<id>` and use
+that absolute path for the whole command. Missing worktree, wrong branch,
+detached HEAD or the repository base directory itself → STOP and run
+`/ks-research <id>` to bootstrap the feature workspace. Never switch branches.
 
 ## Execution contract (non-negotiable)
 You are FORBIDDEN from:

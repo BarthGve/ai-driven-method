@@ -36,10 +36,14 @@ The primary agent must announce Quick Fix mode and its exact scope before
 editing, keep the diff minimal, preserve existing abstractions, and perform a
 proportionate verification (at minimum a focused lint, typecheck, existing test,
 or visual browser check when applicable). TDD and subagent review are optional,
-not forbidden. Quick Fix work must still happen on the currently authorized
-branch/worktree. Before editing, the primary agent must verify that no other
-agent is editing the same files or targets. If work overlaps, coordinate
-ownership or stop; never make concurrent edits to the same targets.
+not forbidden.
+
+Quick Fix work happens only in the repository's base directory on branch
+`dev`. It never gets a feature branch or a worktree. Before editing, check the
+current branch. If it is not `dev`, stop and ask the user whether they really
+want to continue on that non-`dev` branch; never switch branches automatically.
+Before editing, verify that no other agent owns the base directory. If another
+agent is working there, coordinate ownership or stop; never overlap edits.
 
 ## Pipeline (commands)
 - `/ks-prd`        frames the kill: target SaaS, kill mode, perimeter (WHAT + WHY)
@@ -60,6 +64,30 @@ Utilities:
 - `/ks-status`        derives the project's pipeline state from the files (framing, per-story progress, next command)
 
 One feature = one Research → Design → Plan → Execute → Review → Ship cycle = one branch = one PR (Design only when the story has UI).
+
+## Where work happens
+
+There are exactly two modes. A complexity score never chooses the directory:
+
+| Mode | Working directory | Branch |
+| --- | --- | --- |
+| Explicit Quick Fix | Repository base directory | `dev`; if another branch is checked out, stop and ask before continuing |
+| Feature / story | Dedicated `.worktrees/<story-id>/` worktree | Exact `feature/<story-id>` branch |
+
+Every change that is not explicitly announced and eligible as a Quick Fix is a
+feature. A feature uses its dedicated worktree from Research through Design,
+Plan, Execute, Review and Ship, regardless of its complexity score. Never
+create or check out a feature branch in the repository base directory.
+
+The `worktree-manager` subagent creates or verifies the worktree before
+Research begins. It imports untracked `.env*` files and installs dependencies
+inside the worktree. Before every later story phase, resolve and state the
+absolute worktree path and verify the exact branch. Missing worktree, wrong
+branch, detached HEAD or a second branch name is a hard stop. Never improvise
+with `git switch`, `git checkout`, `git stash` or an `-isolated` suffix.
+
+One agent, one working directory. While an agent owns a directory, no second
+agent and no main context may edit, checkout or stash in it.
 
 ## Story ids and branches
 - Every story has an id: `s<number>-<short-slug>` (e.g. `s01-submit-testimonial`). It is assigned in docs/stories.md and reused verbatim everywhere: `docs/research/<id>.md`, `docs/plans/<id>.md`, `docs/reviews/<id>.md`, branch `feature/<id>`.

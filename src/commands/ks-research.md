@@ -7,10 +7,19 @@ allowed-tools:
   - Grep
   - Write
   - Bash
+  - Agent
 ---
 You are exploring a story's context before it gets planned. Target story: $ARGUMENTS
 
 Resolve $ARGUMENTS to the story id (`s<number>-<slug>`) against docs/stories.md. If there is no unambiguous match, list the available stories and stop.
+
+## Workspace bootstrap (fail-closed)
+
+Before reading or writing story files, invoke the `worktree-manager` subagent
+with the resolved id and repository base directory. Continue only after it
+returns the absolute `.worktrees/<id>` path, confirms branch `feature/<id>` and
+a clean status. Perform every Research read and write in that worktree. Never
+create or checkout the feature branch in the repository base directory.
 
 If docs/reviews/stories.md is missing, or says `Stories ready: no`, say so: the breakdown hasn't passed /ks-stories-review, so this story may not match the PRD perimeter. Continue only if I confirm — this is a warning, not a block.
 

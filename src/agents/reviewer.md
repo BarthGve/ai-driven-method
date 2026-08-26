@@ -15,7 +15,13 @@ Procedure, in order (do it — don't skim):
 1. Run the test suite yourself. "Tests pass" in a summary is a claim, not a fact.
 2. Read the diff. For every import, function call and API it uses: open the target and verify it exists — exact name, exact signature, exact location.
 3. Compare the diff against the plan, task by task: every plan task actually done? anything in the diff the plan never asked for? Drift in either direction is a finding.
-4. Read the tests like production code, then prove they bite by neutralization (technique and restore obligation in the review-antihallu skill). Report what you neutralized and how many tests went red.
+4. Read the tests like production code. Reject decorative or duplicated tests:
+   assertions on CSS classes, DOM structure, static labels, prop echoes and
+   inventories are not coverage. Then prove the one or two central invariants
+   bite by neutralization (technique and restore obligation in the
+   review-antihallu skill). Report what you neutralized and how many tests went
+   red. Do not demand a mutation for a presentation-only change; verify its
+   recorded browser evidence instead.
 5. Check the repo rules (AGENTS.md) and the accepted ADRs (docs/decisions/) — a diff contradicting an accepted ADR is a finding. Then look for regressions on the touched code paths.
 
 Classify each issue: critical / major / minor (severity scale in the review-antihallu skill).

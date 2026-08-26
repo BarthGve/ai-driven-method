@@ -4,15 +4,24 @@ description: Test-first discipline for agentic implementation. Preloaded in the 
 ---
 # Agentic TDD
 
-For each task in the plan:
+For each behavior-bearing task in the plan:
 1. Write a failing test that describes the expected behavior.
 2. Run it and watch it fail. Not optional: a test you never saw fail proves nothing.
 3. Write the minimum code to make it pass.
 4. Run the suite. Refactor if needed, tests always green.
 5. Tick the task's checkbox in the plan. No commit here.
 
+A task that only changes copy, styling, spacing, responsive composition or
+other presentation with no conditional behavior does not require a synthetic
+unit test. Verify it with the focused lint/typecheck required by the project
+and a browser or visual check at the affected viewport/theme. Record that
+evidence before ticking the task.
+
 Rules:
-- No production code without a test motivating it.
+- No new business behavior, data contract, state transition, permission,
+  validation or interaction without a test motivating it. Purely visual or
+  copy-only production changes use visual verification instead of decorative
+  component tests.
 - Test behavior, not implementation: assert what the user gets, not which internal function got called.
 - Minimal scope: YAGNI. Implement the task, nothing more.
 - One commit per story, not per task, tests green at commit. It carries the code of every task and the plan file with its checkboxes ticked — the plan is the live progress tracker, never a commit trigger.
@@ -24,7 +33,24 @@ Ranked, and the ranking is not negotiable:
 1. **Business rules** — validation, permissions, the decisions that make the product refuse or accept. On every refusal assert BOTH that it was refused AND that nothing was written or read further down: a refusal that still reaches the data layer is a leak, not a refusal.
 2. **Pure functions** — derivations, validators, orderings, parsers. Cheap, precise, they pin the invariants. Extract a rule into a pure function *so that* it can be tested this way.
 3. **Persistence shape** — the queries actually emitted, and the constraints that carry a business rule.
-4. **Screens** — only what a user can observe: what appears, what is refused, what an interaction produces. Never the markup.
+4. **Screens** — conditional behavior and user interactions: what is refused,
+   what changes state, where an action navigates, and whether a meaningful
+   empty/error state replaces misleading data. Never test markup, CSS classes,
+   breakpoint utility names or static inventory.
+
+### Frontend test decision
+
+Add a component or browser test only when at least one answer is yes:
+
+- Does user interaction produce an outcome that can silently regress?
+- Does conditional rendering distinguish materially different states?
+- Does an accessible name, role or focus behavior enable the action?
+- Does the component transform domain data into a decision the user relies on?
+
+Otherwise use visual verification. A label deserves an assertion only when it
+is itself a contract: an accessible control name, a status distinction, a
+legal/safety warning or a refusal reason. Ordinary headings, helper copy and
+translated wording do not each need their own component test.
 
 ## Where it is proven is not a free choice
 
@@ -43,18 +69,31 @@ Runtime is dominated by **per-file** cost — environment setup and module loadi
 
 ## The acceptance criterion is the mutation, not the count
 
-Before ticking a task: **neutralize the line you just protected and watch the right test go red.** Remove the guard, invert the condition, return early — then run.
+Before ticking a behavior-bearing task: **neutralize the invariant you just
+protected and watch the right test go red.** Remove the guard, invert the
+condition, return early — then run. Do not invent a mutation for a visual-only
+task; record its browser/visual evidence instead.
 
 - Nothing goes red → the test is decorative. Delete it and write the one that bites, or state in your report that this behavior is untested.
 - The wrong test goes red → the coverage is accidental. Move the assertion to where the rule lives.
 
-Restore the mutation immediately, and name in your summary which mutations you ran and how many tests each turned red. A story that cannot name a single biting mutation has not been tested, whatever its test count says.
+Restore the mutation immediately, and name in your summary which mutations you
+ran and how many tests each turned red. A behavior-bearing story that cannot
+name a single biting mutation has not been tested, whatever its test count
+says. A presentation-only task reports visual evidence instead.
 
 ## Do not write these
 
 - **Inventory tests** freezing a list against a literal copy of itself. Red on every legitimate addition, blind to every defect.
 - **Mock echo**: asserting a double was called with what the test just handed it. That tests the double.
 - **Snapshots of markup**, and any assertion on class names or structure.
+- **Responsive-by-class tests** such as asserting `sm:hidden`, `md:flex` or a
+  Tailwind token. Verify the rendered viewport in a browser instead.
+- **Static-copy tests** whose only failure is a harmless wording change. Test
+  copy only when the words carry an accessibility, status, refusal, legal or
+  safety contract.
+- **Prop echo tests** that prove a component prints the literal value the test
+  just passed without any branching or transformation.
 - **Substring coverage** of documentation or registries: a name contained in a longer one is "covered" by it, and the guarantee is an illusion.
 - **A test written to raise a coverage number.** This method sets no coverage target, deliberately: that metric manufactures suites that are large, slow and blind.
 

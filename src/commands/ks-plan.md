@@ -7,10 +7,16 @@ allowed-tools:
   - Grep
   - Write
   - AskUserQuestion
+  - Bash
 ---
 You are planning a story's implementation. Target story: $ARGUMENTS
 
 Resolve $ARGUMENTS to the story id (`s<number>-<slug>`) against docs/stories.md. If there is no unambiguous match, list the available stories and stop.
+
+Locate the dedicated `.worktrees/<id>` worktree, verify that it is on exactly
+`feature/<id>`, and perform every read and write there. Missing worktree, wrong
+branch, detached HEAD or the repository base directory itself → STOP and run
+`/ks-research <id>` first. Never create or switch branches here.
 
 Read: docs/stories.md (the target story), docs/research/<id>.md (if it exists), docs/design-system.md and docs/designs/<id>.md (if they exist), docs/architecture.md, AGENTS.md
 Output structure: @templates/plan.md
@@ -21,8 +27,18 @@ If the story has UI, the plan follows the screen defined in docs/designs/<id>.md
 
 Proceed as follows:
 1. Isolate the target story and its acceptance criteria.
-2. Break it into ordered tasks, each one small and verifiable. Lean on the research: real files, verified APIs, known traps. A task that can't fail a test isn't a task — merge it into one that can.
-3. Anticipate the touched files and the test strategy. If the story is scored complexity 5, or the plan grows past roughly ten tasks, the story is too big: say so and suggest a split instead of a bloated plan.
+2. Break it into ordered tasks, each one small and verifiable. Lean on the
+   research: real files, verified APIs, known traps. A behavior, business rule,
+   data contract or interaction must name the test that can fail. A purely
+   presentational task may instead name a focused visual/browser check plus
+   lint and typecheck; never manufacture a component test merely so every task
+   owns one.
+3. Anticipate the touched files and the test strategy. Test each invariant at
+   the closest valuable layer and avoid proving the same behavior again in
+   every caller. Explicitly separate automated behavior tests from visual
+   verification. If the story is scored complexity 5, or the plan grows past
+   roughly ten tasks, the story is too big: say so and suggest a split instead
+   of a bloated plan.
 4. If planning forces a structural choice (library, pattern, data model) with rejected alternatives, record it as an ADR in `docs/decisions/` (@templates/adr.md) — it will travel with the story branch.
 5. Write the plan to `docs/plans/<id>.md`, frontmatter `validated: no`.
 6. Validation checkpoint (AskUserQuestion): "Validate this plan?" — options: Validate / I'll review it first. On Validate, set `validated: yes` in the plan's frontmatter. /ks-execute refuses an unvalidated plan.

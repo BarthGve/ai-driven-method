@@ -26,6 +26,12 @@ The orchestrator drives one story's cycle — it never replaces the framing. Che
 
 Then resolve $ARGUMENTS to the story id (`s<number>-<slug>`) against docs/stories.md. No unambiguous match → list the available stories and stop. Never invent a framing doc or a story to keep going.
 
+Invoke the `worktree-manager` subagent with the resolved id and repository base
+directory. Continue only after it returns the absolute `.worktrees/<id>` path,
+confirms branch `feature/<id>` and a clean status. Every phase below, every
+subagent and both checkpoints operate on files in that worktree. Never create
+or checkout the feature branch in the repository base directory.
+
 ## Phase 1 — Research
 If docs/research/<id>.md doesn't exist, produce it now following the ks-research contract: codebase-analysis skill on the story's scope, current state of the code, output structured by @templates/research.md. Otherwise reuse the existing file.
 
@@ -38,7 +44,7 @@ If docs/plans/<id>.md doesn't exist, produce it following the ks-plan contract: 
 CHECKPOINT — mandatory, whether the plan is new or already existed. If the plan's frontmatter already says `validated: yes`, continue. Otherwise present the plan summary (tasks, files touched, test strategy) and ask via AskUserQuestion: "Validate this plan?" — options: Validate / Modify / Stop. An existing plan file does NOT count as validated. On Validate, set `validated: yes` in the plan's frontmatter. Anything else: don't touch the marker, don't continue.
 
 ## Phase 4 — Execute
-Fail-closed: docs/plans/<id>.md must carry `validated: yes` in its frontmatter — missing means back to the Phase 3 checkpoint. Then delegate to the `implementer` subagent exactly as /ks-execute does: branch feature/<id>, strict TDD, only what the plan specifies; fix mode first if a blocking review exists. Capture its summary.
+Fail-closed: docs/plans/<id>.md must carry `validated: yes` in its frontmatter — missing means back to the Phase 3 checkpoint. Then delegate to the `implementer` subagent exactly as /ks-execute does, with the verified absolute worktree as its working directory: strict TDD, no branch switching, only what the plan specifies; fix mode first if a blocking review exists. Capture its summary.
 
 ## Phase 5 — Review
 Delegate to the `reviewer` subagent exactly as /ks-review does: fresh context, story diff `git diff <default-branch>...feature/<id>`, test suite run by the reviewer, verdict ending with the exact `Max severity:` and `Ship allowed:` lines. Write the report to docs/reviews/<id>.md.
