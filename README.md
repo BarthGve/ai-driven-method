@@ -26,10 +26,25 @@ Full method documentation: [DOC.md](DOC.md)
 
 You don't clone this repo into your project: the installer drops its files into whatever directory you run it from.
 
-Quickest — one-liner, from your project's root (the script fetches the repo itself):
+Quickest — choose your tool and run the matching one-liner from your project's
+root (the script fetches the repo itself).
+
+**Claude Code:**
 
     cd your-project
     curl -fsSL https://raw.githubusercontent.com/MikeCodeur/killer-saas/main/install.sh | bash
+
+**Codex:**
+
+    cd your-project
+    curl -fsSL https://raw.githubusercontent.com/MikeCodeur/killer-saas/main/install.sh | bash -s -- --target codex
+
+To install the Codex skills globally instead:
+
+    curl -fsSL https://raw.githubusercontent.com/MikeCodeur/killer-saas/main/install.sh | bash -s -- --global --target codex
+
+The Codex target requires Node.js and installs the skills in `.codex/skills`
+for a project install or `~/.codex/skills` for a global install.
 
 Prefer to read before you run? Clone the repo somewhere, then run the script from your project's root:
 
