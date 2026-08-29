@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# dm-wiki — publish product docs to the GitHub wiki on release.
+# Usage: dm-wiki.sh publish <app-root> <version> <story-id...>
+set -euo pipefail
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+# shellcheck source=dm-config.sh
+source "$SCRIPT_DIR/dm-config.sh"
+
+die() { echo "dm-wiki: $*" >&2; exit 1; }
+
+cmd_publish() {
+  local app_root="${1:-}" version="${2:-}"
+  shift 2 || true
+  [ -n "$app_root" ] && [ -n "$version" ] || die "usage: publish <app-root> <version> <story-id...>"
+  [ "$#" -ge 1 ] || die "publish needs at least one story-id"
+
+  DM_APP_ROOT="$app_root"
+  dm_config_load "$app_root"
+
+  local owner="$DM_OWNER" repo="$DM_REPO"
+  local wiki_url="https://github.com/${owner}/${repo}.wiki.git"
+  local tmp
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/dm-wiki.XXXXXX")"
+  cleanup() { rm -rf "$tmp"; }
+  trap cleanup EXIT
+
+  # Clone or init wiki
+  if ! git clone --depth 1 "$wiki_url" "$tmp/wiki" 2>/dev/null; then
+    mkdir -p "$tmp/wiki"
+    (
+      cd "$tmp/wiki"
+      git init -b master
+      git remote add origin "$wiki_url"
+      printf '# %s\n' "$repo" >Home.md
+      git add Home.md
+      git -c user.email="${GIT_AUTHOR_EMAIL:-dm-wiki@localhost}" \
+          -c user.name="${GIT_AUTHOR_NAME:-dm-wiki}" \
+          commit -m "chore: init wiki" || true
+    )
+  fi
+
+  local id src dest
+  local -a shipped=()
+  for id in "$@"; do
+    src="$app_root/docs/product/${id}.md"
+    [ -f "$src" ] || die "missing product doc: $src"
+    dest="$tmp/wiki/${id}.md"
+    cp "$src" "$dest"
+    shipped+=("$id")
+  done
+
+  # Rebuild Home.md: keep existing shipped pages listed + version
+  node -e '
+    const fs = require("fs");
+    const path = require("path");
+    const wikiDir = process.argv[1];
+    const version = process.argv[2];
+    const newly = process.argv.slice(3);
+    const files = fs.readdirSync(wikiDir).filter((f) => f.endsWith(".md") && f !== "Home.md");
+    const ids = files.map((f) => f.replace(/\.md$/, "")).sort();
+    for (const id of newly) if (!ids.includes(id)) ids.push(id);
+    ids.sort();
+    let body = `# Product wiki\n\n**Version:** ${version}\n\n## Shipped stories\n\n`;
+    for (const id of ids) body += `- [${id}](${id})\n`;
+    fs.writeFileSync(path.join(wikiDir, "Home.md"), body);
+  ' "$tmp/wiki" "$version" "${shipped[@]}"
+
+  (
+    cd "$tmp/wiki"
+    git add -A
+    if git diff --cached --quiet; then
+      echo "dm-wiki: nothing to commit"
+      exit 0
+    fi
+    git -c user.email="${GIT_AUTHOR_EMAIL:-dm-wiki@localhost}" \
+        -c user.name="${GIT_AUTHOR_NAME:-dm-wiki}" \
+        commit -m "docs: publish product wiki for v${version}"
+    git push -u origin HEAD:master 2>/dev/null || git push -u origin HEAD:main
+  )
+  echo "dm-wiki: published v${version} (${#shipped[@]} stories)"
+}
+
+main() {
+  local cmd="${1:-}"
+  case "$cmd" in
+    publish) shift; cmd_publish "$@" ;;
+    *) die "usage: dm-wiki.sh publish <app-root> <version> <story-id...>" ;;
+  esac
+}
+
+main "$@"
