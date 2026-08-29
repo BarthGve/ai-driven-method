@@ -133,8 +133,10 @@ pre_push() {
 
       case "$local_ref" in
         refs/heads/feature/*)
+          # Ticket branches require Ship allowed; story framing (docs-only) does not.
           id="$(story_id_from_branch "${local_ref#refs/heads/}")"
-          if [ -n "$id" ] && ! ship_allowed "$id"; then
+          if [ -n "$(ticket_id_from_branch "${local_ref#refs/heads/}")" ] \
+            && [ -n "$id" ] && ! ship_allowed "$id"; then
             echo "dm-gate: refusing to push $remote_ref — '$id' has no passed review." >&2
             rc=1
           fi
@@ -143,8 +145,12 @@ pre_push() {
 
       while IFS= read -r id; do
         [ -n "$id" ] || continue
+        case "$id" in
+          */*) ;; # ticket work id
+          *) continue ;; # story framing merge — no review file required
+        esac
         if ! ship_allowed "$id"; then
-          echo "dm-gate: refusing to push $remote_ref — story/ticket '$id' was merged without a passed review." >&2
+          echo "dm-gate: refusing to push $remote_ref — ticket '$id' was merged without a passed review." >&2
           rc=1
         fi
       done < <(git log --merges --format='%s' "$range" 2>/dev/null \

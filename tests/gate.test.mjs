@@ -106,6 +106,45 @@ test("pre-push allows next into main", () => {
   assert.equal(runGate(d, ["pre-push"], { input }), "");
 });
 
+test("pre-push allows framing feature branch into next without review", () => {
+  const d = repo();
+  execSync("git checkout -b feature/s01-x next", { cwd: d, stdio: "pipe" });
+  mkdirSync(join(d, "docs/research"), { recursive: true });
+  writeFileSync(join(d, "docs/research/s01-x.md"), "research");
+  execSync("git add docs && git commit -m research", { cwd: d, stdio: "pipe" });
+  const sha = execSync("git rev-parse HEAD", { cwd: d, encoding: "utf8" }).trim();
+  const zero = "0000000000000000000000000000000000000000";
+  const input = `refs/heads/feature/s01-x ${sha} refs/heads/next ${zero}\n`;
+  assert.equal(runGate(d, ["pre-push"], { input }), "");
+});
+
+test("pre-push refuses ticket feature branch into next without Ship allowed", () => {
+  const d = repo();
+  execSync("git checkout -b feature/s01-x/t01-y next", { cwd: d, stdio: "pipe" });
+  writeFileSync(join(d, "code.js"), "1");
+  execSync("git add code.js && git commit -m feat", { cwd: d, stdio: "pipe" });
+  const sha = execSync("git rev-parse HEAD", { cwd: d, encoding: "utf8" }).trim();
+  const zero = "0000000000000000000000000000000000000000";
+  const input = `refs/heads/feature/s01-x/t01-y ${sha} refs/heads/next ${zero}\n`;
+  assert.throws(() => runGate(d, ["pre-push"], { input }));
+});
+
+test("pre-push allows ticket feature branch into next with Ship allowed", () => {
+  const d = repo();
+  mkdirSync(join(d, "docs/reviews/s01-x"), { recursive: true });
+  writeFileSync(
+    join(d, "docs/reviews/s01-x/t01-y.md"),
+    "Max severity: none\nShip allowed: yes\n",
+  );
+  execSync("git checkout -b feature/s01-x/t01-y next", { cwd: d, stdio: "pipe" });
+  writeFileSync(join(d, "code.js"), "1");
+  execSync("git add code.js docs && git commit -m feat", { cwd: d, stdio: "pipe" });
+  const sha = execSync("git rev-parse HEAD", { cwd: d, encoding: "utf8" }).trim();
+  const zero = "0000000000000000000000000000000000000000";
+  const input = `refs/heads/feature/s01-x/t01-y ${sha} refs/heads/next ${zero}\n`;
+  assert.equal(runGate(d, ["pre-push"], { input }), "");
+});
+
 test("AGENTS.md names next as integration and Quick Fix on next", () => {
   const t = readFileSync(AGENTS, "utf8");
   assert.match(t, /\bnext\b[\s\S]*integration|integration[\s\S]*\bnext\b/i);
