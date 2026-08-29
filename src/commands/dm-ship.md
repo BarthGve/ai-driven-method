@@ -16,7 +16,7 @@ the repository base directory.
 
 ## Step 0 — Gate (fail-closed, mechanical)
 Run: `grep -q '^Ship allowed: yes' docs/reviews/<id>.md`
-If the file is missing or the command fails, STOP immediately: "Ship blocked — review missing or negative. Run /ks-review <id>." Nothing below runs without a passing gate.
+If the file is missing or the command fails, STOP immediately: "Ship blocked — review missing or negative. Run /dm-review <id>." Nothing below runs without a passing gate.
 
 Then proceed:
 1. Without switching branches, commit docs/reviews/<id>.md on the already verified feature branch if not already committed (the PR must carry its review). Then verify the tests pass. Failing tests → stop.
@@ -27,8 +27,8 @@ Then proceed:
 
 **Always squash.** One story = one commit on the default branch. The working commits stay on the branch, the history stays readable, and no merge commit is created. Without it a seven-story release lands as fifty commits nobody can read.
 
-- **manual (default): do NOT merge.** End with: "PR opened: <url>. Merging is yours to decide (human review, protected branch, CI) — **squash-merge it**. After merging, rerun /ks-ship <id> to confirm the deployment and clean up the branch."
-- **auto**: `gh pr merge <url> --squash --delete-branch=false`, trigger the deployment, confirm it's live (URL), then run the Cleanup step. End with: "Story shipped to production. Cycle complete. Next story: /ks-research <story>"
+- **manual (default): do NOT merge.** End with: "PR opened: <url>. Merging is yours to decide (human review, protected branch, CI) — **squash-merge it**. After merging, rerun /dm-ship <id> to confirm the deployment and clean up the branch."
+- **auto**: `gh pr merge <url> --squash --delete-branch=false`, trigger the deployment, confirm it's live (URL), then run the Cleanup step. End with: "Story shipped to production. Cycle complete. Next story: /dm-research <story>"
 
 Never merge in manual mode, even if everything is green — the gate authorizes the ship, the human decides it.
 

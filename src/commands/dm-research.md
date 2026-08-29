@@ -21,7 +21,7 @@ returns the absolute `.worktrees/<id>` path, confirms branch `feature/<id>` and
 a clean status. Perform every Research read and write in that worktree. Never
 create or checkout the feature branch in the repository base directory.
 
-If docs/reviews/stories.md is missing, or says `Stories ready: no`, say so: the breakdown hasn't passed /ks-stories-review, so this story may not match the PRD perimeter. Continue only if I confirm — this is a warning, not a block.
+If docs/reviews/stories.md is missing, or says `Stories ready: no`, say so: the breakdown hasn't passed /dm-stories-review, so this story may not match the PRD perimeter. Continue only if I confirm — this is a warning, not a block.
 
 Read: docs/stories.md (the target story), docs/architecture.md, AGENTS.md
 Output structure: @templates/research.md
@@ -39,4 +39,4 @@ Proceed as follows:
 
 Write no code. Plan nothing: this command produces verified context, not a plan.
 
-End with: "Research ready in docs/research/<id>.md. Next step: /ks-design <id> (UI story) or /ks-plan <id>"
+End with: "Research ready in docs/research/<id>.md. Next step: /dm-design <id> (UI story) or /dm-plan <id>"

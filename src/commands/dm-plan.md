@@ -16,12 +16,12 @@ Resolve $ARGUMENTS to the story id (`s<number>-<slug>`) against docs/stories.md.
 Locate the dedicated `.worktrees/<id>` worktree, verify that it is on exactly
 `feature/<id>`, and perform every read and write there. Missing worktree, wrong
 branch, detached HEAD or the repository base directory itself → STOP and run
-`/ks-research <id>` first. Never create or switch branches here.
+`/dm-research <id>` first. Never create or switch branches here.
 
 Read: docs/stories.md (the target story), docs/research/<id>.md (if it exists), docs/design-system.md and docs/designs/<id>.md (if they exist), docs/architecture.md, AGENTS.md
 Output structure: @templates/plan.md
 
-If docs/research/<id>.md doesn't exist, point out that /ks-research <id> is recommended before planning — without research, the plan relies on possibly stale docs. Continue only if I confirm.
+If docs/research/<id>.md doesn't exist, point out that /dm-research <id> is recommended before planning — without research, the plan relies on possibly stale docs. Continue only if I confirm.
 
 If the story has UI, the plan follows the screen defined in docs/designs/<id>.md: it references the design system's components and never invents new ones. The HTML mockup is a reference, not a source of code.
 
@@ -41,10 +41,10 @@ Proceed as follows:
    of a bloated plan.
 4. If planning forces a structural choice (library, pattern, data model) with rejected alternatives, record it as an ADR in `docs/decisions/` (@templates/adr.md) — it will travel with the story branch.
 5. Write the plan to `docs/plans/<id>.md`, frontmatter `validated: no`.
-6. Validation checkpoint (AskUserQuestion): "Validate this plan?" — options: Validate / I'll review it first. On Validate, set `validated: yes` in the plan's frontmatter. /ks-execute refuses an unvalidated plan.
+6. Validation checkpoint (AskUserQuestion): "Validate this plan?" — options: Validate / I'll review it first. On Validate, set `validated: yes` in the plan's frontmatter. /dm-execute refuses an unvalidated plan.
 
 If the plan file already exists when the command runs, skip straight to the validation checkpoint: show the summary and ask.
 
 Write no code. This command produces a plan, not code.
 
-End with: "Plan validated. Next: /ks-execute <id>" — or "Plan awaiting validation. Rerun /ks-plan <id> to validate." if it wasn't validated.
+End with: "Plan validated. Next: /dm-execute <id>" — or "Plan awaiting validation. Rerun /dm-plan <id> to validate." if it wasn't validated.

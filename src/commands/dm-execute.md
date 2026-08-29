@@ -7,7 +7,7 @@ allowed-tools:
   - Agent
   - Bash
 ---
-# ks-execute — Delegated implementation
+# dm-execute — Delegated implementation
 
 Target story: $ARGUMENTS
 
@@ -25,9 +25,9 @@ If you can't invoke the Agent tool, stop and report the error. Don't improvise.
 
 ### Step 1 — Prerequisites (fail-closed)
 1. Resolve $ARGUMENTS to the story id (`s<number>-<slug>`) against docs/stories.md. No unambiguous match → list the available stories, STOP.
-2. Resolve `<repository-base>/.worktrees/<id>` and verify its branch is exactly `feature/<id>`. Missing worktree, wrong branch, detached HEAD or the repository base directory itself → STOP and run `/ks-research <id>` to bootstrap the feature workspace. Never improvise another branch or path.
-3. From that worktree, read docs/plans/<id>.md. If it doesn't exist, STOP: ask for /ks-plan <id> first. Go no further.
-4. Check the plan's frontmatter: it must contain `validated: yes`. Otherwise STOP: "Plan not validated. Review it, then rerun /ks-plan <id> to validate."
+2. Resolve `<repository-base>/.worktrees/<id>` and verify its branch is exactly `feature/<id>`. Missing worktree, wrong branch, detached HEAD or the repository base directory itself → STOP and run `/dm-research <id>` to bootstrap the feature workspace. Never improvise another branch or path.
+3. From that worktree, read docs/plans/<id>.md. If it doesn't exist, STOP: ask for /dm-plan <id> first. Go no further.
+4. Check the plan's frontmatter: it must contain `validated: yes`. Otherwise STOP: "Plan not validated. Review it, then rerun /dm-plan <id> to validate."
 5. Read docs/reviews/<id>.md from the worktree if it exists. If it contains `Ship allowed: no`, this is a FIX run: the review findings come first.
 
 ### Step 2 — Delegate
@@ -43,4 +43,4 @@ Wait for the agent to finish. Capture its summary.
 ### Step 3 — Report
 Summarize: tasks done, files touched, tests added, and any blocker the agent reported. No line-by-line detail.
 
-End with: "Implementation done. Next step: /ks-review <id>"
+End with: "Implementation done. Next step: /dm-review <id>"

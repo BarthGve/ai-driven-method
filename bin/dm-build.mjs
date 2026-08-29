@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// ks-build — emit killer-saas tooling for a given target CLI from the canonical src/.
+// dm-build — emit driven tooling for a given target CLI from the canonical src/.
 // Zero external dependencies. Produces a staging tree that install.sh copies into place.
 //
-//   node bin/ks-build.mjs --target codex --src ./src --out /tmp/ks-stg
+//   node bin/dm-build.mjs --target codex --src ./src --out /tmp/dm-stg
 //
 // Targets:
 //   claude  identity: commands/, skills/, agents/ copied as-is (parity with the bash path)
@@ -57,7 +57,7 @@ function isDir(p) { try { return statSync(p).isDirectory(); } catch { return fal
 
 function codexSkillFromCommand(name, text, outSkillsDir) {
   const { fm, body } = splitFrontmatter(text);
-  const description = fmScalar(fm, "description") || `killer-saas command ${name}`;
+  const description = fmScalar(fm, "description") || `driven command ${name}`;
   const argHint = fmScalar(fm, "argument-hint");
   const skillDir = join(outSkillsDir, name);
   ensureDir(join(skillDir, "agents"));
@@ -65,15 +65,15 @@ function codexSkillFromCommand(name, text, outSkillsDir) {
   // SKILL.md: open-standard frontmatter (name + description) + transformed body.
   const skillFm = `---\nname: ${name}\ndescription: ${description}\n---\n`;
   const preamble =
-    `> killer-saas command, emitted for Codex. Run it explicitly. ` +
+    `> driven command, emitted for Codex. Run it explicitly. ` +
     `Delegation ("the Agent tool" / "subagent_type: X") maps to your Codex subagent ` +
     `mechanism (/agent) using the X skill; file/grep gates and the git hooks are unchanged.\n\n`;
   writeFileSync(join(skillDir, "SKILL.md"), skillFm + preamble + derefInjections(body));
 
-  // agents/openai.yaml: the /ks-* interface.
+  // agents/openai.yaml: the /dm-* interface.
   const defaultPrompt = argHint
     ? `Run ${name} ${argHint}`
-    : `Run the ${name} step of the killer-saas pipeline.`;
+    : `Run the ${name} step of the driven pipeline.`;
   const yaml =
     `interface:\n` +
     `  display_name: "/${name}"\n` +
@@ -84,7 +84,7 @@ function codexSkillFromCommand(name, text, outSkillsDir) {
 
 function codexSkillFromAgent(name, text, outSkillsDir) {
   const { fm, body } = splitFrontmatter(text);
-  const description = fmScalar(fm, "description") || `killer-saas ${name}`;
+  const description = fmScalar(fm, "description") || `driven ${name}`;
   const model = fmScalar(fm, "model");
   const skillDir = join(outSkillsDir, name);
   ensureDir(skillDir);
@@ -137,11 +137,11 @@ const target = args.target;
 const src = args.src;
 const out = args.out;
 if (!target || !src || !out) {
-  console.error("usage: ks-build.mjs --target claude|codex --src <dir> --out <dir>");
+  console.error("usage: dm-build.mjs --target claude|codex --src <dir> --out <dir>");
   process.exit(2);
 }
 ensureDir(out);
 if (target === "codex") emitCodex(src, out);
 else if (target === "claude") emitClaude(src, out);
 else { console.error(`unknown target: ${target}`); process.exit(2); }
-console.log(`ks-build: emitted ${target} into ${out}`);
+console.log(`dm-build: emitted ${target} into ${out}`);

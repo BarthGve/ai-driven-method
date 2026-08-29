@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# ks-gate — killer-saas repo-level guardrails, enforced by git (tool-independent).
+# dm-gate — driven repo-level guardrails, enforced by git (tool-independent).
 # Works the same whether the harness is Claude Code, Codex or Gemini CLI:
 # the gates live in the repo, not in a tool's per-command permissions.
 #
 # Subcommands:
-#   ks-gate plan-validated <id>     exit 0 if docs/plans/<id>.md has `validated: yes`
-#   ks-gate ship-allowed  <id>      exit 0 if docs/reviews/<id>.md has `Ship allowed: yes`
-#   ks-gate pre-commit              block a code commit on feature/<id> without a validated plan
-#   ks-gate pre-push                block pushing to the default branch a merged story without a passed review
+#   dm-gate plan-validated <id>     exit 0 if docs/plans/<id>.md has `validated: yes`
+#   dm-gate ship-allowed  <id>      exit 0 if docs/reviews/<id>.md has `Ship allowed: yes`
+#   dm-gate pre-commit              block a code commit on feature/<id> without a validated plan
+#   dm-gate pre-push                block pushing to the default branch a merged story without a passed review
 set -euo pipefail
 
 repo_root() { git rev-parse --show-toplevel 2>/dev/null || pwd; }
@@ -24,22 +24,22 @@ story_id_from_branch() {
 plan_validated() {
   local id="$1" root; root="$(repo_root)"
   local f="$root/docs/plans/$id.md"
-  [ -f "$f" ] || { echo "ks-gate: no plan for '$id' (docs/plans/$id.md missing). Run /ks-plan $id." >&2; return 1; }
+  [ -f "$f" ] || { echo "dm-gate: no plan for '$id' (docs/plans/$id.md missing). Run /dm-plan $id." >&2; return 1; }
   if grep -qE '^validated:[[:space:]]*yes[[:space:]]*$' "$f"; then
     return 0
   fi
-  echo "ks-gate: plan '$id' not validated (docs/plans/$id.md lacks 'validated: yes'). Validate it via /ks-plan $id." >&2
+  echo "dm-gate: plan '$id' not validated (docs/plans/$id.md lacks 'validated: yes'). Validate it via /dm-plan $id." >&2
   return 1
 }
 
 ship_allowed() {
   local id="$1" root; root="$(repo_root)"
   local f="$root/docs/reviews/$id.md"
-  [ -f "$f" ] || { echo "ks-gate: no review for '$id' (docs/reviews/$id.md missing). Run /ks-review $id." >&2; return 1; }
+  [ -f "$f" ] || { echo "dm-gate: no review for '$id' (docs/reviews/$id.md missing). Run /dm-review $id." >&2; return 1; }
   if grep -qE '^Ship allowed:[[:space:]]*yes[[:space:]]*$' "$f"; then
     return 0
   fi
-  echo "ks-gate: ship blocked for '$id' (docs/reviews/$id.md is not 'Ship allowed: yes')." >&2
+  echo "dm-gate: ship blocked for '$id' (docs/reviews/$id.md is not 'Ship allowed: yes')." >&2
   return 1
 }
 
@@ -59,7 +59,7 @@ pre_commit() {
   done < <(git diff --cached --name-only)
   [ "$code_staged" = 1 ] || return 0
   if ! plan_validated "$id"; then
-    echo "ks-gate: refusing code commit on $branch — no validated plan. (docs-only commits are always allowed.)" >&2
+    echo "dm-gate: refusing code commit on $branch — no validated plan. (docs-only commits are always allowed.)" >&2
     return 1
   fi
   return 0
@@ -89,7 +89,7 @@ pre_push() {
     while IFS= read -r id; do
       [ -n "$id" ] || continue
       if ! ship_allowed "$id"; then
-        echo "ks-gate: refusing to push $remote_ref — story '$id' was merged without a passed review." >&2
+        echo "dm-gate: refusing to push $remote_ref — story '$id' was merged without a passed review." >&2
         rc=1
       fi
     done < <(git log --merges --format='%s' "$range" 2>/dev/null \
@@ -106,7 +106,7 @@ case "$cmd" in
   pre-commit)      pre_commit ;;
   pre-push)        pre_push ;;
   *)
-    echo "usage: ks-gate {plan-validated <id>|ship-allowed <id>|pre-commit|pre-push}" >&2
+    echo "usage: dm-gate {plan-validated <id>|ship-allowed <id>|pre-commit|pre-push}" >&2
     exit 2
     ;;
 esac

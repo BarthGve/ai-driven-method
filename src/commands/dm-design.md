@@ -9,7 +9,7 @@ allowed-tools:
   - AskUserQuestion
   - Bash
 ---
-# ks-design — Story design, anchored to the design system
+# dm-design — Story design, anchored to the design system
 
 Target story: $ARGUMENTS
 
@@ -17,7 +17,7 @@ Resolve the story id, then locate its dedicated `.worktrees/<id>` worktree.
 Before any read or write, verify that it is on exactly `feature/<id>` and use
 that absolute path for the whole command. Missing worktree, wrong branch,
 detached HEAD or the repository base directory itself → STOP and run
-`/ks-research <id>` to bootstrap the feature workspace. Never switch branches.
+`/dm-research <id>` to bootstrap the feature workspace. Never switch branches.
 
 ## Execution contract (non-negotiable)
 You are FORBIDDEN from:
@@ -29,7 +29,7 @@ You are FORBIDDEN from:
 
 ### Step 1 — Prerequisites (fail-closed)
 Check that docs/design-system.md exists AND is non-empty.
-- Missing or empty → STOP. Reply: "No design system found in docs/design-system.md. Set it up first via /ks-design-system, then rerun /ks-design." Produce NO design.
+- Missing or empty → STOP. Reply: "No design system found in docs/design-system.md. Set it up first via /dm-design-system, then rerun /dm-design." Produce NO design.
 - Present → load it. Its tokens and components are your only visual source, whichever path is chosen.
 
 ### Step 2 — Tool choice
@@ -50,7 +50,7 @@ Read docs/stories.md, resolve the target story id (`s<number>-<slug>`) and isola
 **EXTERNAL path (Claude Design / Gemini)** — you write the brief, the user produces the screens:
 1. Write docs/designs/<id>-brief.md (structure: @templates/design-brief.md): every screen with layout, exact fields and actions, the four states, and the design system constraints COPIED IN (tokens, components, do/don't) so the brief is self-contained and pasteable into the external tool. Out-of-scope stated. This file is the deliverable of this step — not a chat message.
 2. The user takes the brief to Claude Design / Gemini and brings back the result (exported HTML, screenshot, or description). You then: record/normalize the mockup into docs/designs/<id>.html, and write docs/designs/<id>.md (structure: @templates/design-screen.md) describing the screen and pointing to the HTML.
-If the user brought nothing back → end with: "Brief ready in docs/designs/<id>-brief.md — take it to your design tool, then rerun /ks-design <id> with the result." Don't generate in their place, unless they explicitly switch to the Agent path.
+If the user brought nothing back → end with: "Brief ready in docs/designs/<id>-brief.md — take it to your design tool, then rerun /dm-design <id> with the result." Don't generate in their place, unless they explicitly switch to the Agent path.
 
 ### Step 5 — Gaps
 Any need the design system doesn't cover → record it under "Design system gaps" in the .md. DON'T invent it.
@@ -60,4 +60,4 @@ Timebox: defined enough to unblock the Plan, not pixel-perfect.
 ## Mockup status (hard rule)
 docs/designs/<id>.html is a REFERENCE, not code to copy. In Execute, the screen is built with the boilerplate's real components. The mockup communicates intent (layout, states); it doesn't replace the component system and never gets pasted into production.
 
-End with: "Design ready (docs/designs/<id>.md + .html). Next step: /ks-plan <id>"
+End with: "Design ready (docs/designs/<id>.md + .html). Next step: /dm-plan <id>"

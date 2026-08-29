@@ -1,6 +1,6 @@
 ---
 name: stories-reviewer
-description: Reviews the story breakdown against the PRD perimeter, fresh context, read-only. Invoked by /ks-stories-review.
+description: Reviews the story breakdown against the PRD perimeter, fresh context, read-only. Invoked by /dm-stories-review.
 tools: Read, Grep, Glob
 model: inherit
 skills:
@@ -17,7 +17,7 @@ Procedure, in order (do it — don't skim):
 3. **Story by story**, check what the agentic-stories rules require: end-to-end shippable value (not a technical layer), acceptance criteria that can each become a test, agentic notes present, complexity score (a 5 must be split, a 4 must state its risk), id shaped `s<number>-<slug>` and unique.
 4. **The list as a whole.** Dependency order: no cycle, no forward reference (a story assuming work scheduled later). Overlaps: two stories claiming the same slice.
 
-Judge only the breakdown. Implementation choices belong to /ks-plan, not here.
+Judge only the breakdown. Implementation choices belong to /dm-plan, not here.
 
 Classify each issue: critical / major / minor (severity scale in the stories-review skill).
 

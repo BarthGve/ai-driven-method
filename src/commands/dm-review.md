@@ -8,7 +8,7 @@ allowed-tools:
   - Write
   - Bash
 ---
-# ks-review — Delegated review + gate
+# dm-review — Delegated review + gate
 
 Target story: $ARGUMENTS
 
@@ -36,8 +36,8 @@ switch branches. Then invoke the Agent tool:
 Wait for the verdict.
 
 ### Step 2 — Report
-Write the full report to docs/reviews/<id>.md. It MUST end with the exact lines `Max severity: ...` and `Ship allowed: yes` or `Ship allowed: no` — /ks-ship greps that line, and without it the ship stays blocked. A single critical = no.
+Write the full report to docs/reviews/<id>.md. It MUST end with the exact lines `Max severity: ...` and `Ship allowed: yes` or `Ship allowed: no` — /dm-ship greps that line, and without it the ship stays blocked. A single critical = no.
 
 ### Step 3 — Gate (fail-closed)
-- Verdict with a CRITICAL → Ship blocked. End with: "Ship blocked (critical). Fix via /ks-execute <id> (fix mode), then rerun /ks-review <id>."
-- Otherwise → End with: "Review passed. Next step: /ks-ship <id>"
+- Verdict with a CRITICAL → Ship blocked. End with: "Ship blocked (critical). Fix via /dm-execute <id> (fix mode), then rerun /dm-review <id>."
+- Otherwise → End with: "Review passed. Next step: /dm-ship <id>"

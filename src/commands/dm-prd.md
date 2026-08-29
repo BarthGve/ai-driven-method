@@ -7,12 +7,12 @@ allowed-tools:
   - Bash
   - AskUserQuestion
 ---
-You are framing a killer-saas project. Subject: $ARGUMENTS
+You are framing a driven project. Subject: $ARGUMENTS
 
 Use this template as the output structure:
 @templates/prd.md
 
-killer-saas builds products by replicating an existing SaaS — the target is the spec. Before anything else, lock the kill frame.
+driven builds products by replicating an existing SaaS — the target is the spec. Before anything else, lock the kill frame.
 
 Proceed as follows:
 1. The kill preamble — ask me, one question at a time:
@@ -26,4 +26,4 @@ Proceed as follows:
 3. Fill each section of the template with my answers. Fill nothing you haven't validated with me.
 4. Write the result to `docs/prd.md` and commit it on the default branch (docs: prd).
 
-End with: "PRD ready in docs/prd.md. Next step: /ks-stories"
+End with: "PRD ready in docs/prd.md. Next step: /dm-stories"
