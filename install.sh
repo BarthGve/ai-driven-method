@@ -134,6 +134,18 @@ sync_templates() {
   done
 }
 
+# Tooling bash helpers + CI workflow template — always overwrite on install/update.
+sync_lib() {
+  local payload="${1:-$SRC}"
+  mkdir -p ./.dm/lib
+  cp -R "$payload/lib/." ./.dm/lib/
+  chmod +x ./.dm/lib/*.sh 2>/dev/null || true
+  if [ -d "$payload/workflows" ]; then
+    mkdir -p ./.dm/workflows
+    cp -R "$payload/workflows/." ./.dm/workflows/
+  fi
+}
+
 # AGENTS.md est la source de règles partagée (native pour Codex, importée par CLAUDE.md pour Claude).
 drop_agents_md() {
   local payload="$1"
@@ -167,15 +179,15 @@ install_target() {
   case "$1" in
     claude)
       copy_tooling_claude "./.claude"
-      sync_templates "$SRC"; drop_agents_md "$SRC"; wire_claude_md
+      sync_templates "$SRC"; sync_lib "$SRC"; drop_agents_md "$SRC"; wire_claude_md
       echo "✅ driven installé (Claude, projet, version $VERSION). Commandes : /dm-prd … /dm-ship" ;;
     codex)
       copy_tooling_codex "./.codex"
-      sync_templates "$SRC"; drop_agents_md "$SRC"   # AGENTS.md natif Codex, pas de CLAUDE.md
+      sync_templates "$SRC"; sync_lib "$SRC"; drop_agents_md "$SRC"   # AGENTS.md natif Codex, pas de CLAUDE.md
       echo "✅ driven installé (Codex, projet, version $VERSION). Skills : dm-prd … dm-ship dans .codex/skills." ;;
     grok)
       copy_tooling_grok "./.grok"
-      sync_templates "$SRC"; drop_agents_md "$SRC"   # AGENTS.md partagé, pas de CLAUDE.md requis
+      sync_templates "$SRC"; sync_lib "$SRC"; drop_agents_md "$SRC"   # AGENTS.md partagé, pas de CLAUDE.md requis
       echo "✅ driven installé (Grok, projet, version $VERSION). Commandes : dm-prd … dm-ship dans .grok/commands." ;;
     all)
       install_target claude
@@ -197,6 +209,8 @@ case "$MODE" in
     seed_cache() {
       mkdir -p "$CACHE"
       cp -R "$SRC/templates" "$CACHE/"
+      cp -R "$SRC/lib" "$CACHE/"
+      [ -d "$SRC/workflows" ] && cp -R "$SRC/workflows" "$CACHE/"
       cp "$SRC/AGENTS.md" "$CACHE/"
       cp "$PAYLOAD_ROOT/install.sh" "$CACHE/install.sh" 2>/dev/null \
         || cp "${BASH_SOURCE[0]:-$0}" "$CACHE/install.sh" 2>/dev/null || true
@@ -221,9 +235,9 @@ case "$MODE" in
 
   init)
     local_src="$SRC"; [ -d "$local_src/templates" ] || local_src="$CACHE"
-    sync_templates "$local_src"; drop_agents_md "$local_src"
+    sync_templates "$local_src"; sync_lib "$local_src"; drop_agents_md "$local_src"
     case "$TARGET" in claude|all) wire_claude_md ;; esac   # CLAUDE.md seulement si Claude est cible
-    echo "✅ templates + rules ajoutés à $(pwd) (cible $TARGET)"
+    echo "✅ templates + rules + .dm/lib ajoutés à $(pwd) (cible $TARGET)"
     if [ "$HOOKS" = 1 ]; then install_hooks; fi
     ;;
 

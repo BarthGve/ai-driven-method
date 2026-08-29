@@ -39,6 +39,6 @@ Proceed as follows:
 6. Re-score the story's complexity now that you have read the code, and compare with docs/stories.md. A score given before anyone opened a file is a guess; yours is not. A verdict of 5 carries a split proposal — it belongs here, where the facts are.
 7. Write the result to `docs/research/<id>.md`.
 
-Write no code. Plan nothing: this command produces verified context, not a plan.
+Write no code. Plan nothing: this command produces verified context, not a plan. No board readiness gate — child tickets may not exist yet.
 
 End with: "Research ready in docs/research/<id>.md. Next step: /dm-design <id> (UI story) or /dm-plan <id>"

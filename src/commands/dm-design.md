@@ -60,4 +60,6 @@ Timebox: defined enough to unblock the Plan, not pixel-perfect.
 ## Mockup status (hard rule)
 docs/designs/<id>.html is a REFERENCE, not code to copy. In Execute, the screen is built with the boilerplate's real components. The mockup communicates intent (layout, states); it doesn't replace the component system and never gets pasted into production.
 
+No board readiness gate — design is story framing; child tickets may not exist yet.
+
 End with: "Design ready (docs/designs/<id>.md + .html). Next step: /dm-plan <id>"

@@ -18,11 +18,11 @@ STOP; never checkout the feature branch in the repository base directory.
 Run: `grep -q '^Ship allowed: yes' docs/reviews/<story-id>/<ticket-id>.md`
 If the file is missing or the command fails, STOP immediately: "Ship blocked — review missing or negative. Run /dm-review <story-id> <ticket-id>." Nothing below runs without a passing gate.
 
-Require `docs/product/<story-id>.md` (from `/dm-docs`). Missing → STOP.
+Require `docs/product/<story-id>.md` (from `/dm-docs`). Missing → STOP: "Product doc required — run /dm-docs <story-id>."
 
 Then proceed:
 1. Without switching branches, commit `docs/reviews/<story-id>/<ticket-id>.md` on the already verified ticket branch if not already committed (the PR must carry its review). Then verify the tests pass. Failing tests → stop.
-2. If a PR for `feature/<story-id>/<ticket-id>` already exists, don't open a duplicate — check its state: MERGED → jump straight to the Cleanup step; OPEN → continue. Otherwise push the branch and open a clean PR from `feature/<story-id>/<ticket-id>` to **`next`** (never `main`): clear title, structured description (what, why, how to test), readable diff. Include the review verdict (max severity + findings summary) in the PR body.
+2. If a PR for `feature/<story-id>/<ticket-id>` already exists, don't open a duplicate — check its state: MERGED → jump straight to the Cleanup step; OPEN → continue. Otherwise push the branch and open a clean PR from `feature/<story-id>/<ticket-id>` to **`next`** (never `main`): `gh pr create --base next --head feature/<story-id>/<ticket-id> …`. Clear title, structured description (what, why, how to test), readable diff. Include the review verdict (max severity + findings summary) in the PR body.
 3. Read the ship strategy from AGENTS.md ("Ship strategy" section). No section, or no explicit `auto` → the mode is manual.
 
 ## Step 4 — Merge (per the ship strategy)
@@ -49,6 +49,11 @@ Never clean up on the promise of a merge — only on proof:
    considers unmerged, which is every squashed branch. The safety therefore
    rests entirely on step 1 — never remove the worktree or branch without the
    `MERGED` proof.
-4. Board: move the **child** Issue to `test`. If every sibling child of the parent US is `test` or `shipped`, move the **parent US** to `test`. Otherwise leave the parent where it is.
+4. Board — child to `test`, then derive parent:
+   ```bash
+   bash .dm/lib/dm-board.sh status-set <story-id>/<ticket-id> test
+   bash .dm/lib/dm-board.sh parent-sync <story-id>
+   ```
+   (`parent-sync` moves the parent US to `test` only when every child is `test` or `shipped`; parent never uses `ready`.)
 
 The content is on `next`, the audit trail is in the merged PR: the ticket branch has no further use.

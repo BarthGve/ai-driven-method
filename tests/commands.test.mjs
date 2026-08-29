@@ -1,0 +1,47 @@
+import { existsSync, readFileSync } from "node:fs";
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+const required = [
+  "dm-prd", "dm-init", "dm-stories", "dm-stories-review", "dm-architect",
+  "dm-design-system", "dm-research", "dm-design", "dm-plan", "dm-docs",
+  "dm-execute", "dm-review", "dm-ship", "dm-release", "dm-orchestrator",
+  "dm-status", "dm-help",
+];
+
+test("all dv commands exist", () => {
+  for (const n of required) {
+    assert.ok(existsSync(`src/commands/${n}.md`), n);
+  }
+});
+
+test("stories creates parent US only", () => {
+  assert.match(readFileSync("src/commands/dm-stories.md", "utf8"), /issue-create-us/);
+});
+
+test("plan creates child tickets with size and person-day estimates", () => {
+  const t = readFileSync("src/commands/dm-plan.md", "utf8");
+  assert.match(t, /issue-create-ticket/);
+  assert.match(t, /estimate/i);
+  assert.match(t, /size/i);
+  assert.match(t, /XS|S|M|L|XL/);
+  assert.match(t, /0\.5/);
+});
+
+test("research does not require ready", () => {
+  assert.doesNotMatch(readFileSync("src/commands/dm-research.md", "utf8"), /require-ready/);
+});
+
+test("execute requires child ready", () => {
+  assert.match(readFileSync("src/commands/dm-execute.md", "utf8"), /require-ready/);
+});
+
+test("ship sets test status", () => {
+  assert.match(readFileSync("src/commands/dm-ship.md", "utf8"), /status-set .*test/);
+});
+
+test("release bumps version and wiki", () => {
+  const t = readFileSync("src/commands/dm-release.md", "utf8");
+  assert.match(t, /dm-version\.sh bump/);
+  assert.match(t, /dm-wiki\.sh publish/);
+});

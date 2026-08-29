@@ -1,0 +1,53 @@
+# Copied into the app repo by /dm-init → .github/workflows/dm-gate.yml
+name: dm-gate
+
+on:
+  pull_request:
+    branches: [next, main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ticket PR into next — Ship allowed
+        if: github.base_ref == 'next' && startsWith(github.head_ref, 'feature/')
+        run: |
+          set -euo pipefail
+          # feature/<story>/<ticket> → docs/reviews/<story>/<ticket>.md
+          # feature/<story> alone → story framing (docs); skip ship gate
+          ref="${{ github.head_ref }}"
+          story="${ref#feature/}"
+          case "$story" in
+            */*)
+              review="docs/reviews/${story}.md"
+              if [ ! -f "$review" ]; then
+                echo "dm-gate: missing $review"
+                exit 1
+              fi
+              grep -q '^Ship allowed: yes' "$review"
+              ;;
+            *)
+              echo "dm-gate: story framing PR — skip ticket ship gate"
+              ;;
+          esac
+
+      - name: Release PR next → main — VERSION bumped
+        if: github.base_ref == 'main' && github.head_ref == 'next'
+        run: |
+          set -euo pipefail
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          base_ver="$(git show "origin/${{ github.base_ref }}:VERSION" 2>/dev/null || true)"
+          head_ver="$(cat VERSION 2>/dev/null || true)"
+          if [ -z "$head_ver" ]; then
+            echo "dm-gate: VERSION missing on next"
+            exit 1
+          fi
+          if [ "$head_ver" = "$base_ver" ]; then
+            echo "dm-gate: VERSION unchanged vs main ($head_ver) — bump before release"
+            exit 1
+          fi
+          echo "dm-gate: VERSION $base_ver → $head_ver"

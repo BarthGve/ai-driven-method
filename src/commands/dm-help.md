@@ -1,5 +1,5 @@
 ---
-description: Affiche le pipeline driven — l'ordre des phases et la règle unique
+description: Affiche le pipeline driven — l'ordre des phases, US vs tickets
 disable-model-invocation: true
 ---
 # driven — Pipeline
@@ -7,27 +7,38 @@ disable-model-invocation: true
 Règle unique : interdit de coder en direct. Chaque feature passe par le pipeline.
 
 ## Une fois par projet
-1. /dm-prd <cible>       — cadre le kill : SaaS cible, périmètre, QUOI + POURQUOI
-2. /dm-stories           — découpe en user stories agentic-ready
-3. /dm-stories-review    — relit le découpage vs le périmètre du PRD (contexte vierge)
-4. /dm-architect         — stack, conventions, rules
-5. /dm-design-system     — capture le design system global (tokens, composants)
+1. /dm-prd <cible>       — cadre le produit : clone ou greenfield, périmètre, QUOI + POURQUOI
+2. /dm-init              — repo GitHub, branches `main`/`next`, Project, wiki, VERSION, CI
+3. /dm-stories           — découpe en **user stories** (Issues parent, colonne `backlog`)
+4. /dm-stories-review    — relit le découpage vs le PRD (contexte vierge)
+5. /dm-architect         — stack, conventions, rules
+6. /dm-design-system     — design system global (tokens, composants)
 
-## Par story (une feature = un cycle = une branche = une PR)
-6. /dm-research <story>  — explore le contexte réel (code actuel, API, pièges)
-7. /dm-design <story>    — décline l'écran depuis le design system (si UI)
-8. /dm-plan <story>      — éclate la story en tâches
-9. /dm-execute <story>   — code en TDD (subagent isolé)
-10. /dm-review <story>   — review anti-hallucination + gate
-11. /dm-ship <story>     — ouvre la PR ; merge manuel par défaut (cf. AGENTS.md)
+## Par user story (framing — branche `feature/<story-id>`)
+7. /dm-research <story>  — contexte réel (pas de gate `ready`)
+8. /dm-design <story>    — écran depuis le design system si UI (pas de `ready`)
+9. /dm-plan <story>      — **tickets enfants** `tNN-…` avec `size` (XS–XL) et `estimate` (pas de 0,5 j)
+10. /dm-docs <story>     — page produit `docs/product/<story>.md` (pas de push wiki)
 
-Bloqué en review sur un critique → retour /dm-execute (fix mode). Sinon → /dm-ship.
+## Par ticket (livraison — branche `feature/<story>/<ticket>`)
+La colonne **`ready` n'existe que sur les tickets enfants**, jamais sur l'US parent.
+11. /dm-execute <story> <ticket>  — `require-ready` puis code en TDD (subagent)
+12. /dm-review <story> <ticket>   — review + gate `Ship allowed`
+13. /dm-ship <story> <ticket>     — PR vers **`next`** ; après merge → enfant `test` + `parent-sync`
+
+## Release (production)
+14. /dm-release           — US parent en `test` ; bump VERSION ; PR `next` → `main` ; wiki ; `shipped`
+
+## US vs tickets (à retenir)
+| | User story (parent) | Ticket (enfant) |
+| --- | --- | --- |
+| Id | `s01-…` | `s01-…/t01-…` |
+| Board | backlog → in progress → test → shipped (**pas** `ready`) | backlog → **ready** → in progress → test → shipped |
+| Branche | `feature/<story>` (docs only) | `feature/<story>/<ticket>` (code) |
+| Création Issue | `/dm-stories` (`issue-create-us`) | `/dm-plan` Validate (`issue-create-ticket`) |
 
 ## Orchestrateur
-/dm-orchestrator <story> — enchaîne les 6 temps du cycle en une commande.
-Il ne remplace rien : mêmes contrats, mêmes subagents, mêmes gates que les
-commandes unitaires. Il s'arrête sur 2 questions bloquantes : valider le plan
-(écrit dans le fichier plan), confirmer le ship. Cycle routinier → orchestrateur ;
-besoin de piloter ou inspecter une phase → commandes unitaires.
+- `/dm-orchestrator <story>` — research → design → plan (checkpoint) → docs, puis liste les tickets en backlog
+- `/dm-orchestrator <story> <ticket>` — execute → review → ship (checkpoint)
 
-Où en est le projet (avancement par story, prochaine commande) : /dm-status
+État du projet : `/dm-status`

@@ -1,22 +1,22 @@
 ---
-description: Get a story implemented in TDD, in an isolated subagent. Never codes in the main context.
-argument-hint: <story id or name>
+description: Implement one child ticket in TDD via the implementer subagent
+argument-hint: <story id> <ticket id>
 allowed-tools:
   - Read
   - Glob
   - Agent
   - Bash
 ---
-# dm-execute — Delegated implementation
+# dm-execute — Delegated ticket implementation
 
-Target story: $ARGUMENTS
+Target: $ARGUMENTS
 
 ## Execution contract (non-negotiable)
 You MUST complete this command by delegating to the `implementer` subagent. You are FORBIDDEN from:
-- Writing or modifying code yourself — you don't have the Write/Edit/Bash tools, on purpose.
-- Starting the implementation without a validated plan in docs/plans/<id>.md.
-- Running a story from the repository base directory, whatever its complexity.
-- Creating or checking out the story branch in the repository base directory.
+- Writing or modifying code yourself — you don't have the Write/Edit tools, on purpose.
+- Starting without a validated plan and a child Issue that is ready (or already in progress).
+- Running from the repository base directory.
+- Creating or checking out the ticket branch in the repository base directory.
 - Summarizing work the agent didn't actually do.
 
 If you can't invoke the Agent tool, stop and report the error. Don't improvise.
@@ -24,23 +24,30 @@ If you can't invoke the Agent tool, stop and report the error. Don't improvise.
 ## Workflow
 
 ### Step 1 — Prerequisites (fail-closed)
-1. Resolve $ARGUMENTS to the story id (`s<number>-<slug>`) against docs/stories.md. No unambiguous match → list the available stories, STOP.
-2. Resolve `<repository-base>/.worktrees/<id>` and verify its branch is exactly `feature/<id>`. Missing worktree, wrong branch, detached HEAD or the repository base directory itself → STOP and run `/dm-research <id>` to bootstrap the feature workspace. Never improvise another branch or path.
-3. From that worktree, read docs/plans/<id>.md. If it doesn't exist, STOP: ask for /dm-plan <id> first. Go no further.
-4. Check the plan's frontmatter: it must contain `validated: yes`. Otherwise STOP: "Plan not validated. Review it, then rerun /dm-plan <id> to validate."
-5. Read docs/reviews/<id>.md from the worktree if it exists. If it contains `Ship allowed: no`, this is a FIX run: the review findings come first.
+1. Resolve $ARGUMENTS to `<story-id>` and `<ticket-id>` (`s<number>-<slug>` and `t<number>-<slug>`) against docs/stories.md and docs/plans/<story-id>.md. Ambiguous → list matches, STOP.
+2. Board gate (child only):
+   ```bash
+   bash .dm/lib/dm-board.sh require-ready <story-id>/<ticket-id>
+   ```
+   Exit non-zero → STOP: move the child to `ready` on the Project board first (parent US never uses `ready`).
+3. Then mark in progress:
+   ```bash
+   bash .dm/lib/dm-board.sh status-set <story-id>/<ticket-id> "in progress"
+   ```
+4. Invoke `worktree-manager` for `.worktrees/<story-id>/<ticket-id>` on `feature/<story-id>/<ticket-id>` from **`next`**. Continue only after the absolute path and exact branch are confirmed.
+5. From that worktree, read docs/plans/<story-id>.md. Frontmatter must contain `validated: yes`. Otherwise STOP.
+6. Ticket dependencies in the plan that are not yet `test` or `shipped` → STOP and name them.
+7. If `docs/reviews/<story-id>/<ticket-id>.md` contains `Ship allowed: no`, this is a FIX run: those findings come first.
 
 ### Step 2 — Delegate
 Invoke the Agent tool:
 - subagent_type: implementer
-- description: Implement story <id> in TDD
-- working directory: the absolute dedicated worktree path verified in Step 1.
-- prompt: Implement story <id> from docs/plans/<id>.md, following docs/architecture.md and AGENTS.md. Read docs/research/<id>.md first when it exists — the plan decides, the research holds the verified facts and the traps, and you commit it. The worktree and branch are already prepared and verified: do not create a worktree, switch branches, checkout, or stash. Strict TDD, task by task: failing test → code → passing test, checkbox ticked. One single commit at the end of the story, carrying the story docs and every task — never one commit per task. Implement only what the plan specifies. The tdd-skill is preloaded in your context.
-- On a FIX run, prepend to the prompt: This story was blocked in review. Fix every critical and major finding from docs/reviews/<id>.md first, test-first, then finish any unimplemented plan task.
-
-Wait for the agent to finish. Capture its summary.
+- description: Implement ticket <story-id>/<ticket-id> in TDD
+- working directory: the absolute ticket worktree path
+- prompt: Implement ticket <ticket-id> of story <story-id> from docs/plans/<story-id>.md (only that ticket's tasks), following docs/architecture.md and AGENTS.md. Read docs/research/<story-id>.md when it exists. Strict TDD task by task. One single commit at the end of the ticket. Do not create a worktree or switch branches.
+- On a FIX run, prepend: Fix every critical and major finding from docs/reviews/<story-id>/<ticket-id>.md first, test-first.
 
 ### Step 3 — Report
-Summarize: tasks done, files touched, tests added, and any blocker the agent reported. No line-by-line detail.
+Summarize: tasks done, files touched, tests added, blockers.
 
-End with: "Implementation done. Next step: /dm-review <id>"
+End with: "Implementation done. Next step: /dm-review <story-id> <ticket-id>"

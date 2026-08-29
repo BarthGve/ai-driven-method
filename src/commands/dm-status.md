@@ -1,5 +1,5 @@
 ---
-description: Show the project's pipeline state — framing docs, per-story progress, next command
+description: Show the project's pipeline state — framing, board columns, next command
 allowed-tools:
   - Read
   - Glob
@@ -8,20 +8,23 @@ allowed-tools:
 ---
 # dm-status — Where the project stands
 
-Derive the state from the files — never guess. Bash is for read-only git queries here.
+Derive the state from the files and the board — never guess. Bash is for read-only git queries and `bash .dm/lib/dm-board.sh status-get`.
 
-1. Framing: do docs/prd.md, docs/stories.md, docs/architecture.md, docs/design-system.md exist? A missing one is the next step. Also grep '^Stories ready:' docs/reviews/stories.md → yes / no / none, and show it on the framing line (a `no` or a missing review means the breakdown hasn't passed /dm-stories-review).
-2. Stories: list the ids from docs/stories.md. For each id derive:
-   - complexity: the story's score (from docs/stories.md) — show it next to the id.
-   - research: docs/research/<id>.md exists?
-   - design: docs/designs/<id>.md exists? (UI stories only — otherwise n/a)
-   - plan: docs/plans/<id>.md — missing / draft (no `validated: yes` in the frontmatter) / validated, plus ticked vs total task checkboxes (x/y).
-   - review: grep '^Ship allowed:' docs/reviews/<id>.md → yes / no / none.
-   - ship state: branch merged into the default branch → shipped; else an open PR exists → "PR open — merge pending" (manual strategy); else —.
-   - blocked: a story whose Dependencies (docs/stories.md) aren't all shipped is blocked — its next command is "blocked by <ids>", never a pipeline step.
-3. Start with a one-line summary: X shipped / Y in flight / Z not started. Then print a compact table: story (complexity) | research | design | plan | review | ship | next. The next command follows the pipeline: research → design (UI) → plan → validate the plan (rerun /dm-plan) → execute → review (a `no` verdict → /dm-execute fix mode) → ship — or "merge pending" while the PR awaits a human merge. Keep shipped stories to one line each.
-4. Decisions: if docs/decisions/ exists, mention the ADR count and the latest one.
+1. Framing: do docs/prd.md, docs/stories.md, docs/architecture.md, docs/design-system.md exist? Also grep `^Stories ready:` docs/reviews/stories.md. Show `VERSION` when present. Missing framing → that command is next (`/dm-prd`, `/dm-init`, …).
+2. Stories (parent US): list ids from docs/stories.md. For each id:
+   - complexity from docs/stories.md
+   - board column: `bash .dm/lib/dm-board.sh status-get <id>` (or `n/a` if `.dm/config.json` missing)
+   - research / design / plan (`validated: yes`?) / product doc `docs/product/<id>.md`
+   - from the plan: total person-days (sum of `estimate:`) and size mix (count of XS–XL)
+   - remaining: children not yet `test`/`shipped`
+3. Tickets (children): for each `t*` in docs/plans/<id>.md:
+   - `bash .dm/lib/dm-board.sh status-get <story-id>/<ticket-id>`
+   - size, estimate
+   - review: grep `^Ship allowed:` docs/reviews/<story>/<ticket>.md
+   - PR / ship state vs `next`
+4. Start with one-line summary: X shipped / Y in test / Z in progress / W backlog. Compact tables: US row, then indented ticket rows. Next command is the most useful one (often "move t02 to ready" or `/dm-execute s01 t01` or `/dm-release`).
+5. Decisions: if docs/decisions/ exists, mention ADR count and the latest one.
 
 If docs/ doesn't exist at all, the project hasn't started: point to /dm-prd.
 
-End with the single most useful next command for this project, e.g.: "Next: /dm-plan s02-...".
+End with the single most useful next command, e.g.: "Next: /dm-docs s02-…" or "Next: move s01/t02 to ready, then /dm-execute s01 t02".

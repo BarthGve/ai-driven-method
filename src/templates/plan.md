@@ -3,33 +3,47 @@ validated: no
 ---
 # Plan — Story <id>
 
-Branch: `feature/<id>`
+Branch: `feature/<id>` (framing) · tickets: `feature/<id>/<ticket-id>`
 Research: `docs/research/<id>.md` — read it first; this plan does not repeat it.
 
 ## Target story
 <recap + acceptance criteria>
 
-## Tasks (ordered)
+## Tickets (ordered)
+### t01-<slug>
+- **size:** <XS|S|M|L|XL>
+- **estimate:** <N.N>d   <!-- multiples of 0.5 -->
+- **depends on:** <none | other ticket ids>
+- **scope:** <one execute/review/ship slice>
+
+Tasks:
 1. [ ] <verifiable task>
 2. [ ] <verifiable task>
 
+### t02-<slug>
+- **size:** …
+- **estimate:** …d
+- **depends on:** …
+- **scope:** …
+
+Tasks:
+1. [ ] …
+
+## US totals
+- **Person-days:** <sum of estimates>
+- **Size mix:** <e.g. 1×S, 2×M>
+
 ## Run interdicts
-<what must NOT change, and what the implementer must not do. One line each.
- Typically: files whose diff must stay empty (guards, pinning suites), commands that are
- forbidden in this environment, out-of-scope work that is tempting because it is adjacent.
- Each interdict is verifiable by the reviewer — an interdict nobody can check is a wish.>
+<what must NOT change — verifiable by the reviewer>
 
 ## The point everything turns on
-<the one decision this plan stands on, and the two or three places it could be wrong —
- with what each should be compared against. Written by the planner, who knows where he
- hesitated. It starts the reviewer's attention; it never bounds it.>
+<the one decision this plan stands on>
 
 ## Files touched
-<anticipated list>
+<anticipated list per ticket>
 
 ## Test strategy
 <what to test, at what level>
 
 ## Definition of Done
-<repo DoD, specialized to the story>
-
+<repo DoD, specialized to the story / tickets>

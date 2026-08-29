@@ -1,6 +1,6 @@
 ---
-description: Get a story reviewed by a fresh-context subagent. Gate before Ship. Never reviews in the context that wrote the code.
-argument-hint: <story id or name>
+description: Review one child ticket in a fresh-context subagent. Gate before Ship.
+argument-hint: <story id> <ticket id>
 allowed-tools:
   - Read
   - Grep
@@ -8,36 +8,32 @@ allowed-tools:
   - Write
   - Bash
 ---
-# dm-review — Delegated review + gate
+# dm-review — Delegated ticket review + gate
 
-Target story: $ARGUMENTS
+Target: $ARGUMENTS
 
 ## Execution contract (non-negotiable)
 You MUST complete this command by delegating to the `reviewer` subagent (fresh context). You are FORBIDDEN from:
-- Judging the code yourself: you are probably the context that produced it, hence blind to your own hallucinations.
-- Modifying source code. Your only write right is the report docs/reviews/<id>.md, nothing else.
-- Unblocking the Ship if a critical or major issue is reported.
+- Judging the code yourself: you are probably the context that produced it.
+- Modifying source code. Your only write right is the report `docs/reviews/<story-id>/<ticket-id>.md`.
+- Unblocking Ship if a critical or major issue is reported.
 
 If you can't invoke the Agent tool, stop and report the error. Don't improvise.
 
 ## Workflow
 
 ### Step 1 — Delegate
-Resolve $ARGUMENTS to the story id (`s<number>-<slug>`) against docs/stories.md.
-Locate `.worktrees/<id>`, verify its branch is exactly `feature/<id>`, and use
-that absolute worktree as the reviewer working directory and report location.
-Missing worktree, wrong branch, detached HEAD or repository base → STOP; never
-switch branches. Then invoke the Agent tool:
+Resolve $ARGUMENTS to `<story-id>` and `<ticket-id>`.
+Locate `.worktrees/<story-id>/<ticket-id>`, verify branch `feature/<story-id>/<ticket-id>`, and use that absolute worktree. Missing → STOP.
+Invoke the Agent tool:
 - subagent_type: reviewer
-- description: Anti-hallucination review of story <id>
-- working directory: the absolute dedicated worktree path verified above.
-- prompt: Review story <id>. The story diff is `git diff <default-branch>...feature/<id>` — judge that diff, and only that diff, against docs/plans/<id>.md, docs/research/<id>.md when it exists, AGENTS.md and the accepted ADRs in docs/decisions/. When docs/design-system.md and docs/designs/<id>.md exist, also check conformity to the design system and to the screen's INTENT — not to the mockup HTML line by line; any component, token or color outside the system is drift to classify (major by default, critical if it breaks the product's visual coherence). Run the test suite yourself; don't trust reported results. The quality-bar skill is preloaded (security, factorization, anti-hallucination, severity). Fill the checklist from templates/review-checklist.md, classify each issue (critical / major / minor), and end your report with the exact lines "Max severity: <critical|major|minor|none>" and "Ship allowed: <yes|no>". A single critical or major = Ship allowed: no.
-
-Wait for the verdict.
+- description: Anti-hallucination review of <story-id>/<ticket-id>
+- working directory: the absolute ticket worktree
+- prompt: Review ticket <ticket-id> of story <story-id>. Diff is `git diff next...feature/<story-id>/<ticket-id>` — judge only that diff against the ticket section in docs/plans/<story-id>.md, docs/research/<story-id>.md when present, AGENTS.md and ADRs. When design docs exist, check design-system conformity for UI tickets. Run the test suite yourself. Fill templates/review-checklist.md, classify issues, end with exact lines "Max severity: …" and "Ship allowed: yes|no". A single critical or major = Ship allowed: no.
 
 ### Step 2 — Report
-Write the full report to docs/reviews/<id>.md. It MUST end with the exact lines `Max severity: ...` and `Ship allowed: yes` or `Ship allowed: no` — /dm-ship greps that line, and without it the ship stays blocked. A single critical or major = no.
+Write the full report to `docs/reviews/<story-id>/<ticket-id>.md`. It MUST end with `Max severity: …` and `Ship allowed: yes` or `Ship allowed: no`.
 
 ### Step 3 — Gate (fail-closed)
-- Verdict with a CRITICAL or MAJOR → Ship blocked. End with: "Ship blocked (critical or major). Fix via /dm-execute <id> (fix mode), then rerun /dm-review <id>."
-- Otherwise → End with: "Review passed. Next step: /dm-ship <id>"
+- CRITICAL or MAJOR → "Ship blocked. Fix via /dm-execute <story-id> <ticket-id> (fix mode), then rerun /dm-review …"
+- Otherwise → "Review passed. Next step: /dm-ship <story-id> <ticket-id>"
