@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BOARD = join(ROOT, "src/lib/dm-board.sh");
+const INIT = join(ROOT, "src/lib/dm-init.sh");
 const GH_STUB = join(ROOT, "tests/fixtures/gh-stub.sh");
 
 const CONFIG = {
@@ -177,4 +178,37 @@ test("parent-sync sets test when all children test/shipped", () => {
   const state = JSON.parse(readFileSync(statePath, "utf8"));
   const parent = state.issues.find((i) => i.number === 1);
   assert.equal(parent.projectItems[0].status.name, "test");
+});
+
+test("init assert-status-ids passes when all five present", () => {
+  chmodSync(INIT, 0o755);
+  const json = JSON.stringify({
+    backlog: "opt1",
+    ready: "opt2",
+    "in progress": "opt3",
+    test: "opt4",
+    shipped: "opt5",
+  });
+  assert.equal(
+    execFileSync("bash", [INIT, "assert-status-ids", json], {
+      encoding: "utf8",
+    }).trim(),
+    "",
+  );
+});
+
+test("init assert-status-ids fails when any status id missing", () => {
+  chmodSync(INIT, 0o755);
+  const incomplete = JSON.stringify({
+    backlog: "opt1",
+    ready: "opt2",
+    test: "opt4",
+    shipped: "opt5",
+  });
+  assert.throws(() =>
+    execFileSync("bash", [INIT, "assert-status-ids", incomplete], {
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+    }),
+  );
 });

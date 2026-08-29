@@ -2,6 +2,7 @@
 # dm-init — bootstrap app repo: remote, next/main rulesets, Project V2, wiki, VERSION.
 # Usage: dm-init.sh run [--repo NAME] [--owner LOGIN] [--public|--private] [--yes]
 #        [--no-remote] [--title PROJECT_TITLE]
+#        dm-init.sh assert-status-ids '<json-object>'   # fail-closed helper (tests)
 set -euo pipefail
 
 YES=0
@@ -12,6 +13,31 @@ CREATE_REMOTE=1
 PROJECT_TITLE="driven"
 
 die() { echo "dm-init: $*" >&2; exit 1; }
+
+# Fail closed unless status map has all five exact keys with non-empty ids.
+# Arg: JSON object string (status_option_ids). Prints nothing; exit 1 if incomplete.
+assert_status_option_ids() {
+  local json="${1:-}"
+  [ -n "$json" ] || die "assert-status-ids needs a JSON object"
+  node -e '
+    let status;
+    try { status = JSON.parse(process.argv[1]); }
+    catch (e) {
+      console.error("dm-init: status_option_ids is not valid JSON");
+      process.exit(1);
+    }
+    if (!status || typeof status !== "object" || Array.isArray(status)) {
+      console.error("dm-init: status_option_ids must be an object");
+      process.exit(1);
+    }
+    const need = ["backlog", "ready", "in progress", "test", "shipped"];
+    const missing = need.filter((k) => !status[k] || String(status[k]).trim() === "");
+    if (missing.length) {
+      console.error("dm-init: missing status option ids: " + missing.join(", "));
+      process.exit(1);
+    }
+  ' "$json"
+}
 
 confirm() {
   local msg="$1"
@@ -27,9 +53,7 @@ confirm() {
   esac
 }
 
-parse_args() {
-  [ "${1:-}" = "run" ] || die "usage: dm-init.sh run [--repo NAME] [--owner LOGIN] [--public|--private] [--yes]"
-  shift
+parse_run_args() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --yes|-y) YES=1; shift ;;
@@ -289,44 +313,44 @@ create_project_and_config() {
   field_id="$(node -e 'const j=JSON.parse(process.argv[1]); process.stdout.write(j.id||"")' "$field_json")"
   [ -n "$field_id" ] || die "failed to create status field"
 
-  # Map option names → ids from field-list
-  local fields_json
+  # Map option names → ids from field-list + field-create payload
+  local fields_json status_json
   fields_json="$(gh project field-list "$project_number" --owner "$OWNER" --format json)"
+  status_json="$(
+    node -e '
+      const fieldId = process.argv[1];
+      const fields = JSON.parse(process.argv[2] || "{}");
+      const created = JSON.parse(process.argv[3] || "{}");
+      const list = Array.isArray(fields) ? fields : (fields.fields || fields.items || []);
+      const field = list.find((f) => f.id === fieldId) || list.find((f) => (f.name === "Status" || f.name === "DM Status"));
+      const options = (field && (field.options || field.configuration?.options)) || [];
+      const status = {};
+      for (const opt of options) {
+        if (opt && opt.name) status[opt.name] = opt.id;
+      }
+      for (const o of created.options || []) {
+        if (o && o.name && !status[o.name]) status[o.name] = o.id;
+      }
+      process.stdout.write(JSON.stringify(status));
+    ' "$field_id" "$fields_json" "$field_json"
+  )"
+
+  # Fail closed: never write .dm/config.json with incomplete status_option_ids
+  assert_status_option_ids "$status_json"
+
   node -e '
     const fs = require("fs");
-    const owner = process.argv[1];
-    const repo = process.argv[2];
-    const projectId = process.argv[3];
-    const projectNumber = Number(process.argv[4]);
-    const fieldId = process.argv[5];
-    const fields = JSON.parse(process.argv[6]);
-    const list = Array.isArray(fields) ? fields : (fields.fields || fields.items || []);
-    const field = list.find((f) => f.id === fieldId) || list.find((f) => (f.name === "Status" || f.name === "DM Status"));
-    const options = (field && (field.options || field.configuration?.options)) || [];
-    const status = {};
-    for (const opt of options) {
-      const name = opt.name || opt.name;
-      if (name) status[name] = opt.id;
-    }
-    for (const need of ["backlog", "ready", "in progress", "test", "shipped"]) {
-      if (!status[need]) {
-        // field-create response may embed options
-        const created = JSON.parse(process.argv[7] || "{}");
-        const opts = created.options || [];
-        for (const o of opts) if (o.name) status[o.name] = o.id;
-      }
-    }
     const cfg = {
-      owner,
-      repo,
-      project_id: projectId,
-      project_number: projectNumber,
-      status_field_id: fieldId,
-      status_option_ids: status
+      owner: process.argv[1],
+      repo: process.argv[2],
+      project_id: process.argv[3],
+      project_number: Number(process.argv[4]),
+      status_field_id: process.argv[5],
+      status_option_ids: JSON.parse(process.argv[6])
     };
     fs.mkdirSync(".dm", { recursive: true });
     fs.writeFileSync(".dm/config.json", JSON.stringify(cfg, null, 2) + "\n");
-  ' "$OWNER" "$REPO_NAME" "$project_id" "$project_number" "$field_id" "$fields_json" "$field_json"
+  ' "$OWNER" "$REPO_NAME" "$project_id" "$project_number" "$field_id" "$status_json"
 }
 
 push_branches() {
@@ -353,5 +377,22 @@ cmd_run() {
   echo "dm-init: done — ${OWNER}/${REPO_NAME} (VERSION=$(tr -d '[:space:]' <VERSION))"
 }
 
-parse_args "$@"
-cmd_run
+main() {
+  local cmd="${1:-}"
+  case "$cmd" in
+    run)
+      shift
+      parse_run_args "$@"
+      cmd_run
+      ;;
+    assert-status-ids)
+      shift
+      assert_status_option_ids "${1:-}"
+      ;;
+    *)
+      die "usage: dm-init.sh run [--repo NAME] [--owner LOGIN] [--public|--private] [--yes] | assert-status-ids '<json>'"
+      ;;
+  esac
+}
+
+main "$@"
