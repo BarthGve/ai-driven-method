@@ -17,7 +17,7 @@ Règle unique : interdit de coder en direct. Chaque feature passe par le pipelin
 ## Par user story (framing — branche `feature/<story-id>`)
 7. /dm-research <story>  — contexte réel (pas de gate `ready`)
 8. /dm-design <story>    — écran depuis le design system si UI (pas de `ready`)
-9. /dm-plan <story>      — **tickets enfants** `tNN-…` avec `size` (XS–XL) et `estimate` (pas de 0,5 j)
+9. /dm-plan <story>      — **tickets enfants** `tNN-…` avec `size` (XS–XL) et `estimate` (par pas de 0,5 j : 0,5 / 1 / 1,5…)
 10. /dm-docs <story>     — page produit `docs/product/<story>.md` (pas de push wiki)
 
 ## Par ticket (livraison — branche `feature/<story>/<ticket>`)

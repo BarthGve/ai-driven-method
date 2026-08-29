@@ -37,7 +37,7 @@ Follow the `/dm-research` contract if docs/research/<id>.md is missing. **No `re
 Follow `/dm-design` when the story has UI and docs/designs/<id>.md is missing. Fail-closed on docs/design-system.md.
 
 ### Phase 3 — Plan + checkpoint
-Follow `/dm-plan`: tickets with `size` (XS–XL) and `estimate` (0.5 steps). AskUserQuestion Validate / Modify / Stop. On Validate: `validated: yes` + `issue-create-ticket` for each child (see /dm-plan).
+Follow `/dm-plan`: tickets with `size` (XS–XL) and `estimate` (0.5 steps). AskUserQuestion "Validate this plan?" — options: Validate / I'll review it first (same as `/dm-plan`). On Validate: `validated: yes` + `issue-create-ticket` for each child (see /dm-plan).
 
 ### Phase 4 — Docs
 Follow `/dm-docs`: write docs/product/<id>.md. **No wiki push. No `require-ready`.**
