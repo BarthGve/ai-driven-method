@@ -18,4 +18,9 @@ Rules:
 - Verify, don't assume: name a file, a function or a signature only after opening it.
 - Don't propose rewrites. The boilerplate is imposed: conform to it.
 
-<< IP Mike: code archaeology method, real boilerplate conventions. >>
+## Heuristics (filled)
+
+- **Breadth-first map, then one vertical slice** — folders/entry points/config first; then one feature route → handler → data → UI. That cut beats reading every file.
+- **Conventions as rules, not observations** — write “server actions live in `src/actions`, one file per domain”, not “there are some actions”. Rules feed `AGENTS.md` and `docs/architecture.md`.
+- **Empty repo** — recommend a stack from PRD constraints (product type, clone-target tech if any, data/auth/realtime, team). Language or package manager already present in the repo wins over greenfield preference. Propose 2–3 options + blank-ADR-only; scaffold only after confirmation.
+- **Non-empty repo** — stack and patterns are imposed by what exists; analyze and conform, do not rewrite.

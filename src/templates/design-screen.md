@@ -15,4 +15,3 @@ docs/designs/<id>.html — visual reference. DO NOT copy into production: Execut
 ## Design system gaps
 <needs the system doesn't cover — to be settled, NOT invented here>
 
-<< IP Mike: expected level of detail, what unblocks the Plan without over-designing. >>

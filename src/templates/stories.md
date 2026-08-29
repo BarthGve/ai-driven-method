@@ -19,4 +19,3 @@
 ### Agentic notes
 <technical context useful to the agent: files involved, constraints, traps>
 
-<< IP Mike: target granularity, criteria format, what makes a story "agentic-ready". >>

@@ -104,4 +104,10 @@ says. A presentation-only task reports visual evidence instead.
 - The test is flaky → fix the flakiness first; a flaky test guards nothing.
 - The behavior is only reachable through a replaced boundary → push the rule down into a unit you can test directly, and test it there.
 
-<< IP Mike: test runner and commands, environment names, layer vocabulary, the actors a rule must distinguish, naming and file layout of test files. >>
+## Project discovery (filled)
+
+- **Test command** — discover from `package.json` scripts (`test`, `test:unit`, `vitest`, `jest`), `pyproject.toml` / `pytest.ini`, `Makefile` targets, or CI config. Prefer the project’s documented command; do not invent a runner.
+- **Never assert CSS class names** — no Tailwind tokens, breakpoint utilities, or structural class lists. Behavior and accessible contracts only; visuals via browser check.
+- **Max two new test files per story** — fold further cases into existing files. More than two signals the story is too big (same smell as a plan past ~10 tasks).
+- **Actors a rule distinguishes** — enumerate once beside the rule; each caller gets a single refusal witness, never a re-matrix.
+- **File layout** — one test file per unit under test; name after the unit; group cases inside that file.

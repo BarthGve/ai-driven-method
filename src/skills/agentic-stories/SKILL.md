@@ -20,4 +20,12 @@ Example — bad vs good:
 - Bad: "s01 — Set up the database". A technical layer: no user value, nothing testable end to end, unshippable alone.
 - Good: "s01-submit-testimonial — As a visitor I want to submit a testimonial so that the owner can review it." Criteria: a valid submission is persisted and confirmed; an invalid one shows field errors and persists nothing. The table gets created because this story needs it — as a task inside the story, not as a story.
 
-<< IP Mike: target granularity, good/bad story examples, exact criteria format. >>
+## Heuristics (filled)
+
+- **One story = one user-valuable slice** — shippable end-to-end, not a layer (“DB”, “API”, “UI”).
+- **Plan budget** — if `/dm-plan` would need more than ~10 tasks, split the story before planning.
+- **Complexity 5 must split** — never leave a 5 as one story; break it into smaller shippable slices first.
+- **Falsifiable criteria** — each acceptance criterion must be able to fail a concrete test (persist / refuse / navigate / show state). Vague “works” / “nice UX” is rejected.
+- **Ids** — `s<number>-<slug>` (e.g. `s01-submit-testimonial`), unique, short, stable; reused in every pipeline path and branch.
+- **Clone mode** — agentic notes may cite the target SaaS screen or flow as the reference; never invent parity with graveyard items.
+- **Never graveyard** — nothing from the PRD’s “Explicitly NOT replicated / Out of scope” becomes a story.

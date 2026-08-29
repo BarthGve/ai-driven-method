@@ -17,4 +17,3 @@ What we chose. One decision per ADR.
 ## Consequences
 What becomes easier, what becomes harder, what to watch.
 
-<< IP Mike: decision heuristics, when an ADR is worth writing. >>

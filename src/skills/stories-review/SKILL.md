@@ -29,4 +29,10 @@ Why it runs here: a defect in `docs/stories.md` costs a markdown edit now, and c
 
 Not an implementation review. How a story will be built belongs to `/dm-research` and `/dm-plan`. Judge the breakdown, not the future code — and never rewrite the stories: report, the human fixes.
 
-<< IP Mike: real splitting heuristics, examples of breakdowns that failed in production, coverage thresholds. >>
+## Heuristics (filled)
+
+- **Coverage walk** — start from the PRD perimeter table (Replicated / In scope), not from the stories list. Each row needs ≥1 delivering story; missing rows are critical.
+- **Graveyard leak = critical** — any story that implements Explicitly NOT replicated / Out of scope fails the review hard.
+- **Unsplit 5 = major** — a complexity-5 story still standing as one id must be split before planning.
+- **Technical-layer stories = major** — “create the schema”, “wire the API” without user-visible value.
+- **Coverage threshold** — 100% of perimeter rows mapped; partial mapping is incomplete product, not a style issue.

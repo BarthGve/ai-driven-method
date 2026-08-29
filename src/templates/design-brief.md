@@ -26,4 +26,3 @@ Do not invent components, tokens or colors outside these.
 ## Expected output
 A static HTML mockup of each screen (low fidelity is fine), using only the tokens above. Bring the export back — it will be saved as docs/designs/<id>.html.
 
-<< IP Mike: brief level of detail, what makes an external tool productive on first pass. >>
