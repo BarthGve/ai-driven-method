@@ -12,8 +12,9 @@
 # Subcommands:
 #   dm-gate plan-validated <id>              exit 0 if docs/plans/<story>.md has `validated: yes`
 #   dm-gate ship-allowed  <id>               exit 0 if the review has `Ship allowed: yes`
+#   dm-gate ready-ok [story/ticket]          exit 0 if board child is ready|in progress (or no config)
 #   dm-gate default-integration-branch       prints `next`
-#   dm-gate pre-commit                       block code without a validated plan (ticket branches);
+#   dm-gate pre-commit                       block code without validated plan + ready child;
 #                                            block app code on story framing branches (docs only)
 #   dm-gate pre-push                         refuse non-next into main; gate ticket merges into next
 set -euo pipefail
@@ -22,6 +23,22 @@ repo_root() { git rev-parse --show-toplevel 2>/dev/null || pwd; }
 
 integration_branch() { printf 'next'; }
 production_branch() { printf 'main'; }
+
+# Prefer app install path (.dm/lib); fall back to method-repo sibling of this hook.
+resolve_board() {
+  local root script_dir
+  root="$(repo_root)"
+  script_dir="$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [ -f "$root/.dm/lib/dm-board.sh" ]; then
+    printf '%s' "$root/.dm/lib/dm-board.sh"
+    return 0
+  fi
+  if [ -f "$script_dir/../lib/dm-board.sh" ]; then
+    printf '%s' "$script_dir/../lib/dm-board.sh"
+    return 0
+  fi
+  return 1
+}
 
 # feature/<story-id> or feature/<story-id>/<ticket-id> → id after feature/
 story_id_from_branch() {
@@ -74,6 +91,51 @@ ship_allowed() {
   return 1
 }
 
+# Child ticket must be ready or in progress when the board is initialized.
+# No .dm/config.json → warn and allow (board not initialized yet).
+ready_ok() {
+  local id="${1:-}" root cfg board st
+  root="$(repo_root)"
+  cfg="$root/.dm/config.json"
+
+  if [ ! -f "$cfg" ]; then
+    echo "dm-gate: no .dm/config.json — board ready-gate skipped (run /dm-init)." >&2
+    return 0
+  fi
+
+  if [ -z "$id" ]; then
+    local branch; branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
+    id="$(story_id_from_branch "$branch")"
+  fi
+
+  case "$id" in
+    */*) ;;
+    *)
+      # Parent / framing id — ready is child-only; callers enforce docs-only separately.
+      return 0
+      ;;
+  esac
+
+  if ! board="$(resolve_board)"; then
+    echo "dm-gate: .dm/config.json present but dm-board.sh missing — cannot verify ready for '$id'." >&2
+    return 1
+  fi
+
+  if ! st="$("$board" status-get "$id" 2>/dev/null | tr -d '\r' | head -n1)"; then
+    echo "dm-gate: cannot read board status for '$id' (need ready or in progress)." >&2
+    return 1
+  fi
+  st="${st%"${st##*[![:space:]]}"}"
+
+  case "$st" in
+    ready|"in progress") return 0 ;;
+    *)
+      echo "dm-gate: refusing — '$id' board status is '${st:-unknown}' (need ready or in progress)." >&2
+      return 1
+      ;;
+  esac
+}
+
 pre_commit() {
   local branch id ticket; branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
   id="$(story_id_from_branch "$branch")"
@@ -96,11 +158,12 @@ pre_commit() {
     return 1
   fi
 
-  # Ready-gate: child Issue is identified from feature/<story-id>/<ticket-id>.
-  # Full board status check (ready / in progress) lands with dm-board (ready-ok); here we
-  # always require a validated story plan before ticket code commits.
   if ! plan_validated "$id"; then
     echo "dm-gate: refusing code commit on $branch — no validated plan for child '$ticket'. (docs-only commits are always allowed.)" >&2
+    return 1
+  fi
+
+  if ! ready_ok "$id"; then
     return 1
   fi
   return 0
@@ -165,11 +228,12 @@ cmd="${1:-}"
 case "$cmd" in
   plan-validated)               plan_validated "${2:?story id required}" ;;
   ship-allowed)                 ship_allowed   "${2:?story or ticket id required}" ;;
+  ready-ok)                     ready_ok       "${2:-}" ;;
   default-integration-branch)   integration_branch; printf '\n' ;;
   pre-commit)                   pre_commit ;;
   pre-push)                     pre_push ;;
   *)
-    echo "usage: dm-gate {plan-validated <id>|ship-allowed <id>|default-integration-branch|pre-commit|pre-push}" >&2
+    echo "usage: dm-gate {plan-validated <id>|ship-allowed <id>|ready-ok [story/ticket]|default-integration-branch|pre-commit|pre-push}" >&2
     exit 2
     ;;
 esac

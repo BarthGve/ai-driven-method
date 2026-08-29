@@ -374,7 +374,7 @@ All pipeline data is markdown under `docs/` plus git plus GitHub Issue/Project. 
 | PRD, stories, architecture, design system | `docs/*.md` on `main`/`next` after framing |
 | Research, design, plan, product doc | story branch `feature/<story-id>` then `next` |
 | Ticket review | `docs/reviews/<story-id>/<ticket-id>.md` on the ticket branch then `next` |
-| Board / project ids | `.dm/config.json` (committed) |
+| Board / project ids | `.dm/config.json` (**JSON**, zero-dep; committed) |
 | Decisions | `docs/decisions/NNN-slug.md` |
 | Version | `VERSION`, `CHANGELOG.md` |
 | State | derived (files + `Ship allowed:` + Issue status + git) |
@@ -385,7 +385,7 @@ Framing commits on `main` until `/dm-init` has created `next`; after that, frami
 
 ### Git hooks (`--hooks`)
 
-- pre-commit: **code** on `feature/<story-id>/<ticket-id>` requires validated plan **and** that **child** status in `{ready, in progress}` (docs-only always allowed; story framing branch docs-only always allowed)
+- pre-commit: **code** on `feature/<story-id>/<ticket-id>` requires validated plan **and** `dm-gate ready-ok` (child status in `{ready, in progress}` via `dm-board.sh status-get`). If `.dm/config.json` is missing, ready-ok **warns and allows** (board not initialized). After init, missing ready **blocks**. Docs-only always allowed; story framing branch docs-only always allowed.
 - pre-push: reject pushes to `main` that are not from the `next` integration flow
 - pre-push: reject integrating a **ticket** branch to `next` without `Ship allowed: yes` on that ticket’s review
 

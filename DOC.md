@@ -6,28 +6,29 @@ driven keeps the original pipeline (no direct coding, file gates, subagents)
 and adds: hybrid PRD (clone or greenfield), Grok install, GitHub board + wiki,
 `main`/`next` flow, a stricter quality bar, and semver on release.
 
-See [NOTICE](NOTICE) and [DOC.md](DOC.md).
+See [NOTICE](NOTICE) and [README.md](README.md).
 
 # ai-driven-method — Method documentation
 
-A complete agentic pipeline to kill a SaaS with Claude Code: pick a target, cut the 20% that matters, rebuild it on your boilerplate, ship it to production.
+A complete agentic pipeline for product delivery with Claude Code, Codex, or Grok: frame a hybrid PRD (clone an existing SaaS **or** greenfield), cut shippable user stories and child tickets, enforce quality on a GitHub Project board + wiki + `main`/`next` flow, and release with semver.
 One method = a suite of commands. One principle = no direct coding.
 
 ## Philosophy
 
 Three rules define the normal feature pipeline, enforced by the tooling — not by discipline:
 
-1. **No direct coding.** No code is written outside the pipeline. `/dm-execute` doesn't have the Write/Edit/Bash tools: the main context *cannot* code, it delegates to the `implementer` subagent. The rule lives in the tooling, not in good intentions.
+1. **No direct coding.** No feature code is written outside the pipeline. `/dm-execute` doesn't have the Write/Edit/Bash tools: the main context *cannot* code, it delegates to the `implementer` subagent. The rule lives in the tooling, not in good intentions.
 2. **The context that writes never reviews itself.** An agent is blind to its own hallucinations and to its own gaps. Reviews run in fresh-context, read-only subagents — `reviewer` for the code, `stories-reviewer` for the breakdown.
-3. **Fail-closed.** No plan → no execution. A critical issue in review → no ship. Every gate blocks by default; nothing gets forced through.
+3. **Fail-closed.** No plan → no execution. A **critical or major** issue in review → no ship. Child ticket not `ready` / `in progress` → no code commit once the board exists. Every gate blocks by default; nothing gets forced through.
 
 ### Quick Fix mode
 
 `Quick Fix` is the explicit, user-requested exception for a small, local,
 well-understood, and easily reversible adjustment with no architectural or
-business impact. The primary agent announces the exact scope, edits directly,
-keeps the diff minimal, and performs a proportionate focused verification. TDD
-and a fresh-context subagent review remain available but are not mandatory.
+business impact. The primary agent announces the exact scope, edits directly
+on **`next`** (never `main`), keeps the diff minimal, and performs a
+proportionate focused verification. TDD and a fresh-context subagent review
+remain available but are not mandatory.
 
 It is not a shortcut for features or uncertain work. Changes involving shared
 redesigns, data, APIs, authorization, security, business rules, persistence,
@@ -41,10 +42,10 @@ edits to the same files or targets.
 `src/AGENTS.md` is the sole tracked source of truth for shared workflow rules.
 Maintainers edit that file, never the root `AGENTS.md` produced by a local test
 installation. Rules must not be copied into `CLAUDE.md`: Claude's project file
-stays a one-line `@AGENTS.md` import so Claude and Codex always read the same
-rules.
+stays a one-line `@AGENTS.md` import so Claude, Codex and Grok always read the
+same rules.
 
-After changing the workflow, build both targets with `bin/dm-build.mjs` and test
+After changing the workflow, build targets with `bin/dm-build.mjs` and test
 the relevant installer path. New installs receive `src/AGENTS.md`; updates never
 overwrite a project's existing `AGENTS.md`, so evolved rules must be merged into
 already-installed projects deliberately. Root `AGENTS.md` and `CLAUDE.md` in
@@ -52,159 +53,174 @@ this repository are ignored local installation artifacts, not editable sources.
 
 ## The pipeline
 
-Five framing steps, once per product. Then one cycle per story — one story = one branch (`feature/<id>`) = one PR. Every story has an id (`s<number>-<short-slug>`, e.g. `s01-submit-testimonial`) that names every pipeline file and the branch.
+Framing once per product (including `/dm-init` for remote, board, wiki, `VERSION`).
+Then story framing (docs on `feature/<story-id>`), then ticket delivery
+(`feature/<story-id>/<ticket-id>` → `next`), then `/dm-release` (`next` → `main`).
 
-    PRD → User Stories → Stories Review → Architecture → Design System
-    then, per story:
-    Research → Design → Plan → Execute → Review → Ship
+    PRD → Init → User Stories → Stories Review → Architecture → Design System
+    then, per story (docs):
+    Research → Design → Plan → Docs
+    then, per ticket (code, child ≥ ready):
+    Execute → Review → Ship
+    then production:
+    Release (semver + wiki + shipped)
 
 | Step | Command | Role | Output |
 | --- | --- | --- | --- |
-| PRD | `/dm-prd <target>` | The kill frame: target SaaS, kill mode, perimeter — the WHAT and the WHY | `docs/prd.md` |
-| Stories | `/dm-stories` | Breakdown into shippable, agentic-ready slices | `docs/stories.md` |
-| Stories Review | `/dm-stories-review` | Fresh-context review of the breakdown vs the PRD perimeter | `docs/reviews/stories.md` |
-| Architecture | `/dm-architect` | The HOW: stack, conventions, patterns | `docs/architecture.md` + `AGENTS.md` |
-| Design System | `/dm-design-system` | Captures tokens, components, UI patterns — records, never draws | `docs/design-system.md` |
-| Research | `/dm-research <story>` | The real state of the code within the story's scope | `docs/research/<story>.md` |
-| Design | `/dm-design <story>` | The story's screen, anchored to the design system (agent or Claude Design / Gemini) | `docs/designs/<story>.md` + `.html` |
-| Plan | `/dm-plan <story>` | Sequenced, small, verifiable tasks | `docs/plans/<story>.md` |
-| Execute | `/dm-execute <story>` | TDD implementation by the `implementer` subagent | code + tests + commits |
-| Review | `/dm-review <story>` | Anti-hallucination review by the `reviewer` subagent | `docs/reviews/<story>.md` |
-| Ship | `/dm-ship <story>` | PR; merge + deploy per ship strategy (manual by default) | PR opened / feature in production |
+| PRD | `/dm-prd` | Hybrid frame: clone **or** greenfield — the WHAT and the WHY | `docs/prd.md` |
+| Init | `/dm-init` | Remote, `main`/`next`, Project board, wiki, `VERSION`, CI | `.dm/config.json`, `VERSION`, protections |
+| Stories | `/dm-stories` | Shippable US + **one parent Issue** per US (`backlog`) | `docs/stories.md` |
+| Stories Review | `/dm-stories-review` | Fresh-context review of the breakdown vs the PRD | `docs/reviews/stories.md` |
+| Architecture | `/dm-architect` | Stack from PRD / existing code; conventions | `docs/architecture.md` + `AGENTS.md` |
+| Design System | `/dm-design-system` | Tokens, components, UI patterns — records, never draws | `docs/design-system.md` |
+| Research | `/dm-research <story>` | Real state of the code in the story's scope (no ready gate) | `docs/research/<story>.md` |
+| Design | `/dm-design <story>` | Story screen anchored to the design system (no ready gate) | `docs/designs/<story>.md` + `.html` |
+| Plan | `/dm-plan <story>` | Child tickets with size (XS–XL) + person-day estimates | `docs/plans/<story>.md` + child Issues |
+| Docs | `/dm-docs <story>` | Product page for the wiki (no wiki push) | `docs/product/<story>.md` |
+| Execute | `/dm-execute <story> <ticket>` | TDD via `implementer`; `require-ready` first | code + tests + commits |
+| Review | `/dm-review <story> <ticket>` | Quality-bar review by `reviewer` | `docs/reviews/<story>/<ticket>.md` |
+| Ship | `/dm-ship <story> <ticket>` | PR into **`next`**; after merge child → `test` | PR / board update |
+| Release | `/dm-release` | Bump `VERSION`, PR `next`→`main`, wiki, `shipped` | tag + wiki + board |
 
 ### Framing (once per product)
 
-**/dm-prd** — frames the kill by interviewing the user, starting with the driven preamble: which target SaaS, kill mode (internal replacement vs competing product), why kill it, and the perimeter — the 20% core loop that delivers the value, each replicated feature scored for complexity (1-5, heavy features default to the graveyard), the graveyard of explicitly dropped features, and the angle beyond parity. Then the classic frame: need, users, constraints, success criteria (parity on the perimeter + the angle). Nothing is filled without validation. The WHAT and the WHY, never the HOW.
+**/dm-prd** — frames the product by interviewing the user. First question: **clone** an existing SaaS vs **greenfield**. Clone mode covers target, kill mode (internal replacement vs competing product), why, the 20% perimeter, complexity scores, graveyard, and angle beyond parity. Greenfield covers need, users, why now, in/out of scope (graveyard still kills creep), constraints, and success — no fake “target SaaS”. Nothing is filled without validation. The WHAT and the WHY, never the HOW.
 
-**/dm-stories** — breaks the PRD into agentic-ready user stories (`agentic-stories` skill): each story is an end-to-end shippable slice, with acceptance criteria that can become tests, agentic notes (files involved, traps) — the context a human would infer but an agent must read — and a complexity score (1-5, PRD scale): a 4 flags its risk, a 5 is split before planning.
+**/dm-init** — bootstraps the app repo after the PRD: confirm remote name/visibility/owner, create `next` from `main`, protect both branches, create the Project V2 board with statuses `backlog | ready | in progress | test | shipped`, write `.dm/config.json`, enable the wiki, write `VERSION` (`0.1.0` if absent), copy the CI workflow. Idempotent: re-runs only fill gaps.
 
-**/dm-stories-review** — reviews the breakdown in a fresh context (`stories-reviewer` subagent, read-only, no shell), against the PRD it came from. It walks the PRD perimeter table first — a core-loop feature covered by no story is the most expensive defect in the pipeline, invisible until ship — then hunts graveyard leaks, technical layers disguised as stories, criteria that can't become tests, broken dependency order, unsplit complexity-5 stories, malformed ids and overlaps. Report ends with `Max severity: ...` and `Stories ready: yes|no`. This is a **soft gate**: it doesn't block mechanically, it is surfaced by `/dm-status` and warned about by `/dm-research`. A bad split costs a markdown edit here, and cycles later.
+**/dm-stories** — breaks the PRD into agentic-ready user stories (`agentic-stories` skill). Each US gets **one parent Issue** in `backlog`. Child tickets are **not** created here. Parent US never uses status `ready`.
 
-**/dm-architect** — starts by asking whether the project stands on a boilerplate; if none, it proposes: start from ship-saas.now (the ideal fit for a modern fullstack React / Next.js / Drizzle / Better Auth stack), or scaffold a classic default — Next.js + Tailwind + shadcn/ui — recorded as an ADR and then analyzed like any boilerplate. Then analyzes the starting code (`codebase-analysis` skill): actual structure, conventions and patterns of the boilerplate. Fills the architecture doc and injects the concrete conventions into `AGENTS.md`. The boilerplate is imposed: conform to it, don't rewrite it.
+**/dm-stories-review** — reviews the breakdown in a fresh context (`stories-reviewer`, read-only). Soft gate: surfaced by `/dm-status` and warned about by `/dm-research`, not a hard mechanical block.
 
-**/dm-design-system** — captures the global design system into `docs/design-system.md`: tokens, available components (inventoried from the boilerplate), imposed UI patterns, do/don't. It records and structures — it never invents visuals: the direction comes from the user (Claude Design / Gemini output) or from the boilerplate's existing system. Fail-closed: no source, no design system. Like `AGENTS.md` and the ADRs, it's a transverse asset: set once, read at every story.
+**/dm-architect** — analyzes existing code or **recommends a stack from the PRD** (no hardcoded Next.js). Records the choice as an ADR, fills architecture + conventions in `AGENTS.md`.
 
-### Cycle (per story)
+**/dm-design-system** — captures tokens/components into `docs/design-system.md`. Fail-closed: no source, no design system.
 
-**/dm-research** — explores the story's real scope before any planning: files involved in their current state, verified APIs and functions (exact name, signature, location), traps and dependencies. It checks the story's PREMISE, not just that the things it names exist — a function that exists and throws on the story's case invalidates it — and re-scores the story's complexity now that the code has been read, with a split proposal when the verdict is 5. Framing docs go stale as soon as story 2 ships; research anchors the plan in today's code, not day one's. It is anti-hallucination applied upstream: the review detects, the research prevents.
+### Story framing (docs — branch `feature/<story-id>`)
 
-**/dm-design** — derives the story's screen from the design system. Fail-closed: no `docs/design-system.md`, no design. Two paths, user's choice: the **agent** generates it (structured `.md` + low-fi HTML mockup using only the system's tokens), or the user produces it in **Claude Design / Gemini** — the agent first writes a self-contained brief (`docs/designs/<id>-brief.md`: screens, exact fields, states, design-system constraints copied in), the user pastes it into the external tool, and the agent captures the result into the same output files. Needs the system doesn't cover become "design system gaps" — recorded, never invented. The mockup is a reference, never pasted into production: Execute builds the screen with the boilerplate's real components. Stories without UI skip this step.
+**/dm-research** / **/dm-design** / **/dm-plan** / **/dm-docs** — no board `ready` gate. `/dm-plan` cuts the US into child tickets (`tNN-…`) with **size** (XS–XL) and **estimate** (0.5-day steps). On Validate: create child Issues in `backlog`. `/dm-docs` writes `docs/product/<story>.md` for later wiki publish; it does **not** push the wiki.
 
-**/dm-plan** — breaks the story into ordered tasks, each one small and verifiable, based on the research. Anticipates touched files and the test strategy, and carries the run's interdicts — what must not change, verifiable by the reviewer. Never produces code. The plan is validated by the user before execution.
+### Ticket delivery (code — branch `feature/<story>/<ticket>`)
 
-**/dm-execute** — delegates the implementation to the `implementer` subagent, which works on the story branch `feature/<id>` (strict TDD: failing test → minimal code → refactor, one single commit for the whole story). Fail-closed: no plan in `docs/plans/<id>.md` — or a plan without `validated: yes` — no execution. The main context has neither Write, nor Edit, nor Bash — it can't code even if it "wanted" to. If a previous review blocked the story, it runs in **fix mode**: the review findings are fed to the implementer and fixed first.
+**/dm-execute** — `bash .dm/lib/dm-board.sh require-ready <story>/<ticket>` then `status-set … "in progress"`. Delegates TDD to `implementer`. Fail-closed without a validated plan and without child `ready`/`in progress`.
 
-**/dm-review** — delegates the review to the `reviewer` subagent: fresh context, read-only. The reviewer judges the story diff (`git diff <default-branch>...feature/<id>`), runs the test suite itself, verifies every API/import in the diff actually exists, and proves the tests bite by neutralizing the line the story turns on and counting the reds — a guard nothing turns red on is untested, whatever the suite total says. That mutation is temporary and restored before the report is written; it is the single exception to read-only. When the story has a design, it also checks conformity to the design system and to the screen's intent — off-system components or tokens are drift (major by default). Each issue classified critical / major / minor. The report ends with two machine-parsable lines: `Max severity: ...` and `Ship allowed: yes|no`.
+**/dm-review** — `reviewer` + `quality-bar` skill. Diff is `git diff next...feature/<story>/<ticket>`. Ends with `Max severity: …` and `Ship allowed: yes|no`. **A single critical or major = Ship allowed: no.**
 
-**/dm-ship** — starts with the mechanical gate: `grep '^Ship allowed: yes' docs/reviews/<id>.md` — no file or a `no` verdict stops everything. Then verifies tests on the branch, pushes, opens a clean PR with the review verdict in its body — and follows the project's **ship strategy** (AGENTS.md): `manual`, the default, stops there — merging stays a human decision; `auto` merges, deploys and confirms it's live. After a PROVEN merge — `git merge-base --is-ancestor`, never a promise — and only then, it deletes the story branch, local and remote: the content is in the default branch, the audit trail in the merged PR. In manual mode: merge on GitHub, then rerun `/dm-ship <id>` to confirm the deployment and clean up.
+**/dm-ship** — greps `Ship allowed: yes`, opens PR into **`next`**. After a proven merge: child → `test`, `parent-sync`.
+
+### Production
+
+**/dm-release** — parents in `test`; user picks major/minor/patch; bump `VERSION`; PR `next` → `main`; after merge: tag, `dm-wiki.sh publish`, board → `shipped`.
 
 ### Utilities
 
-**/dm-orchestrator <story>** — the conductor. It chains one story's full cycle (Research → Design → Plan → Execute → Review → Ship) in a single command so you don't drive six commands by hand. What it does NOT do: replace the method. Each phase follows the exact contract of its standalone command, code and review stay delegated to the same subagents, and it stops on two blocking questions (real AskUserQuestion calls, not sentences): **validate the plan** — recorded as `validated: yes` in the plan's frontmatter, an existing file never counts as validated — and **confirm the ship**. The review gate loops back to fix mode at most twice, then stops with the open findings. Use it when the cycle is routine; use the individual commands when you want to inspect or steer a phase. It cannot validate a plan or ship in your place — and it is fail-closed on framing: no PRD, stories or architecture → it stops and points to the missing step instead of improvising.
+**/dm-orchestrator `<story>`** — research → design → plan → docs, then lists backlog children. **`/dm-orchestrator <story> <ticket>`** — execute → review → ship.
 
-**/dm-help** — prints the pipeline map: the phases in order, the single rule, the per-story cycle. Written in French — it's the user-facing cheat sheet for the community. User-invoked only (`disable-model-invocation: true`).
+**/dm-help** — French pipeline map (US vs tickets). User-invoked only.
 
-**/dm-status** — derives the project's state from the files: framing docs, and per story — complexity, research, design, plan (draft or validated), checkbox progress (x/y), review verdict, PR/merge state, dependency blocks — then prints the next useful command per story and for the project. Nothing is stored: the files are the state.
+**/dm-status** — framing + board columns via `status-get` + next useful command.
+
+## US vs tickets
+
+| | User story (parent) | Ticket (child) |
+| --- | --- | --- |
+| Id | `s01-…` | `s01-…/t01-…` |
+| Board | backlog → in progress → test → shipped (**no** `ready`) | backlog → **ready** → in progress → test → shipped |
+| Branch | `feature/<story>` (docs only) | `feature/<story>/<ticket>` (code) |
+| Creation | `/dm-stories` | `/dm-plan` Validate |
 
 ## Data & storage
 
-Everything the pipeline produces is markdown under `docs/`, versioned by git. No database, no state file, no external tracker.
+Markdown under `docs/`, plus board config and version:
 
 | Data | Lives in |
 | --- | --- |
 | PRD, stories, architecture | `docs/prd.md`, `docs/stories.md`, `docs/architecture.md` |
-| Research, plan, review (per story) | `docs/research/<id>.md`, `docs/plans/<id>.md`, `docs/reviews/<id>.md` |
-| Tasks + progress | checkboxes inside `docs/plans/<id>.md`, ticked commit by commit |
-| Decisions | `docs/decisions/NNN-<slug>.md` — MADR-style ADRs: context, options rejected and why, consequences. Immutable, superseded not edited |
-| Design | `docs/design-system.md` (global, transverse) ; `docs/designs/<id>.md` + `.html` per story — the mockup is a reference, never production code |
-| Pipeline state | derived — file existence + `Ship allowed:` verdict + git. Never stored, so never stale |
-
-Lifecycle: framing docs are committed on the default branch at the end of their phase. Story docs travel with the story — the implementer's first commit on `feature/<id>` brings the research, the design and the plan, each task commit ticks its checkbox, `/dm-ship` commits the review. Every PR therefore carries its own research, design, plan and review: the audit trail is the PR itself. Structural decisions get an ADR in `docs/decisions/`: framing ADRs commit on the default branch, story ADRs travel with their PR.
+| Research, plan, product doc | `docs/research/<id>.md`, `docs/plans/<id>.md`, `docs/product/<id>.md` |
+| Ticket review | `docs/reviews/<story>/<ticket>.md` |
+| Board / project ids | `.dm/config.json` (JSON, committed; created by `/dm-init`) |
+| Version | `VERSION`, `CHANGELOG.md` |
+| Decisions | `docs/decisions/NNN-<slug>.md` |
+| Pipeline state | derived — files + `Ship allowed:` + Issue status + git |
 
 ## Tooling anatomy
 
-Five building blocks:
-
 | Block | Location | Role |
 | --- | --- | --- |
-| Commands | `.claude/commands/dm-*.md` | The process — each pipeline step is a command |
-| Skills | `.claude/skills/` | The know-how — reusable, auto-invocable |
-| Agents | `.claude/agents/` | Isolated execution — separate contexts, restricted tools |
-| Templates | `templates/` | The deliverables' structure — every doc has an imposed skeleton |
-| Rules | `AGENTS.md` (+ `CLAUDE.md` → `@AGENTS.md`) | The law of the repo — pipeline, conventions, DoD, gate |
+| Commands | `.claude/commands/dm-*.md` (or Codex/Grok equivalents) | The process |
+| Skills | `*/skills/` | Reusable know-how (`quality-bar`, `tdd-skill`, …) |
+| Agents | `*/agents/` | Isolated execution |
+| Templates | `templates/` | Deliverable skeletons |
+| Lib | `.dm/lib/*.sh` | Board, init, version, wiki helpers |
+| Rules | `AGENTS.md` (+ `CLAUDE.md` → `@AGENTS.md`) | Repo law |
+| Hooks | `.dm-hooks/` via `--hooks` | Git-enforced gates |
 
 ### The subagents
 
-- **implementer** (`opus` model, `tdd-skill` preloaded) — implements the plan, task by task, in TDD. Touches neither the architecture nor the rules, adds nothing out of scope.
-- **reviewer** (`review-antihallu` skill preloaded, read-only apart from the restored mutation of the bite proof) — fresh eyes on code it didn't write. Judges, doesn't fix. Ends by naming what it could NOT verify. A single critical = ship refused.
-- **stories-reviewer** (`stories-review` skill preloaded, read-only, no shell) — reads the breakdown against the PRD perimeter. Reports, never rewrites the stories.
-
-Model policy: the reviewers use `model: inherit` — the review runs with whatever model your session runs. Running on Fable means reviewing with Fable; nothing silently downgrades, and the method doesn't assume you have a specific tier. The implementer is pinned to `opus`: TDD over a full story is the longest, most demanding run of the cycle, and a cheaper tier costs more in round-trips than it saves per token. Change either in `src/agents/*.md`.
+- **implementer** (`opus`, `tdd-skill` + `quality-bar` preloaded) — implements the plan in TDD.
+- **reviewer** (`quality-bar` preloaded, read-only apart from the restored bite-proof mutation) — fresh eyes. Judges, doesn't fix. **A single critical or major = ship refused.**
+- **stories-reviewer** (`stories-review` preloaded, read-only, no shell) — breakdown vs PRD.
+- **worktree-manager** — creates worktrees from **`next`**.
 
 ### The skills
 
-- `agentic-stories` — breakdown into agent-executable stories (Stories phase)
-- `codebase-analysis` — code archaeology: structure, conventions, patterns (Architecture and Research phases)
+- `agentic-stories` — agent-executable story breakdown
+- `codebase-analysis` — structure, conventions, patterns
 - `tdd-skill` — test-first discipline (preloaded in `implementer`)
-- `review-antihallu` — hallucination detection in generated code (preloaded in `reviewer`)
-- `stories-review` — breakdown defects: perimeter coverage, graveyard leaks, dependency order (preloaded in `stories-reviewer`)
+- `quality-bar` — anti-hallucination, OWASP-on-diff, factorization, maintainability; **critical or major blocks ship** (preloaded in `reviewer` / `implementer`)
+- `stories-review` — perimeter coverage, graveyard leaks, dependency order
 
 ## The gate
 
-The review returns a verdict written to `docs/reviews/<id>.md`, ending with the exact lines `Max severity: ...` and `Ship allowed: yes|no`. The gate is mechanical, not declarative: `/dm-ship` greps that line and refuses to run without a `yes` — the verdict file is the key, not anyone's judgment call.
+The review ends with `Max severity: ...` and `Ship allowed: yes|no`. `/dm-ship` greps that line.
 
-- **Critical** → `Ship allowed: no` → ship blocked. Fix via `/dm-execute` (fix mode: the findings are fixed first), then a new `/dm-review`. No exceptions.
-- Major / minor → ship allowed, issues to address in a next cycle.
+- **Critical or major** → `Ship allowed: no` → ship blocked. Fix via `/dm-execute` (fix mode), then a new `/dm-review`.
+- Minor → ship allowed, follow-ups in a later cycle.
 
-Upstream, plan validation works the same way: the checkpoint is a blocking question whose answer is written into the plan file (`validated: yes`), and Execute — standalone or orchestrated — refuses to run without it. A plan file that merely exists is not a validated plan.
+Upstream: plan validation (`validated: yes`) and board ready-gate (child in `ready` / `in progress` when `.dm/config.json` exists) block code the same way.
 
-## Definition of Done (per feature)
+## Definition of Done (per ticket)
 
-- Single PR, structured description, readable diff
+- Single PR into `next`, structured description, readable diff
 - Passing tests on business logic
 - No regression on existing code
-- Review passed (no open critical issue)
-- Deployed to production
+- Review passed (no open critical **or major**)
+- Child Issue moved to `test` after merge; released to `main` via `/dm-release`
 
 ## Install
 
-The installer always targets the directory you run it from — your project's root, not this repo. Get it either via the one-liner (it fetches the repo by itself) or by cloning this repo somewhere and calling its `install.sh` from your project.
+The installer always targets the directory you run it from — your project's root, not this repo.
 
 | Mode | From your project's root | Effect |
 | --- | --- | --- |
-| Project (default) | `curl -fsSL https://raw.githubusercontent.com/BarthGve/ai-driven-method/main/install.sh \| bash` — or `<clone>/install.sh` | `.claude/` + `templates/` + `AGENTS.md`/`CLAUDE.md` in the current project |
-| Global | `<clone>/install.sh --global` | Tooling in `~/.claude` (commands everywhere), payload in `~/.claude/ai-driven-method` |
-| Per project, after global | `~/.claude/ai-driven-method/install.sh init` | Drops templates + rules in the current project |
-| Update | `<clone>/install.sh update` — or the one-liner with `-s -- update` | Cleanly replaces the method's tooling (manifest-tracked, no ghosts, your own commands untouched), refreshes unmodified templates (modified ones are warned about, never overwritten — add `--force` to overwrite them too), stamps `.claude/.dm-version`. `AGENTS.md` is never touched |
+| Project (default) | `curl -fsSL https://raw.githubusercontent.com/BarthGve/ai-driven-method/main/install.sh \| bash` — or `<clone>/install.sh` | Tooling + `templates/` + `AGENTS.md`/`CLAUDE.md` + `.dm/lib` |
+| Codex / Grok | same one-liner with `--target codex` or `--target grok` | `.codex/` or `.grok/` trees |
+| Global | `<clone>/install.sh --global [--target …]` | Tooling under `~/.claude` / `~/.codex` / `~/.grok` |
+| Per project, after global | `~/.claude/ai-driven-method/install.sh init [--target …]` | Templates + rules + `.dm/lib` |
+| Update | one-liner with `-s -- update` | Replaces method tooling; never overwrites `AGENTS.md` |
+| Hooks | add `--hooks` | `core.hooksPath=.dm-hooks` |
 
-`CLAUDE.md` is not shipped: the installer creates it (or appends to it) with `@AGENTS.md`, so Claude Code loads the rules.
+## Multi-tool support (Claude Code / Codex / Grok)
 
-## Multi-tool support (Claude Code / Codex / Gemini)
+One canonical source (`src/`), one installer, per-tool emission — no forked copies.
 
-One canonical source (`src/`, Claude-shaped, the richest target), one installer, per-tool emission — no forked copies. `./install.sh --target claude|codex|all`, project or global scope, drives a per-tool adapter; the Codex transform runs through a zero-dependency Node build (`bin/dm-build.mjs`). What ports and what degrades:
-
-| Building block | Claude Code | Codex | Gemini CLI (planned) |
+| Building block | Claude Code | Codex | Grok |
 | --- | --- | --- | --- |
-| Rules (`AGENTS.md`) | native (+`CLAUDE.md` import) | **native** | `GEMINI.md` shim importing it |
-| Skills (`SKILL.md`) | native | **native** (same open standard) | inlined (no skills mechanism) |
+| Rules (`AGENTS.md`) | native (+`CLAUDE.md` import) | **native** | **native** |
+| Skills (`SKILL.md`) | native | **native** | copied |
 | Templates | copied | copied | copied |
-| Commands (`dm-*`) | `.claude/commands/*.md` | emitted as `.codex/skills/*` | `.gemini/commands/*.toml` |
-| File/grep gates (`validated:`, `Ship allowed:`) | ✅ | ✅ | ✅ |
-| "No direct coding" via tool permissions | ✅ mechanical | ~ agent sandbox (coarser) | ✗ prose-only |
-| Subagent model routing (sonnet/opus) | ✅ | note only | note only |
-| `AskUserQuestion` checkpoints | ✅ structured | prose | prose |
-
-**The honest line:** the file-based gates (a story needs a `validated: yes` plan before code, a `Ship allowed: yes` review before merge) port to every tool because they are shell-on-markdown, not tool permissions. The permission/isolation guarantees are Claude-mechanical and degrade elsewhere. Rather than pretend otherwise, driven moves enforcement into the **repo**:
+| Commands (`dm-*`) | `.claude/commands/*.md` | emitted as `.codex/skills/*` | `.grok/commands/*.md` |
+| File/board/git gates | ✅ | ✅ | ✅ |
+| "No direct coding" via tool permissions | ✅ mechanical | ~ agent sandbox | ~ agent sandbox |
+| Subagent model routing | ✅ | note only | note only |
 
 ### Repo-level enforcement (`--hooks`)
 
-Opt-in git hooks (installed via `core.hooksPath`, reversible) enforce the gates in git, identically for every tool:
+- **pre-commit** — no **code** on `feature/<story>/<ticket>` without `validated: yes` plan; when `.dm/config.json` exists, child must be `ready` or `in progress`. Docs-only always allowed. Story framing branches are docs-only.
+- **pre-push** — only `next` may update `main`; ticket branches need `Ship allowed: yes` before landing on `next`.
 
-- **pre-commit** — no code on `feature/<id>` without `docs/plans/<id>.md` → `validated: yes` (docs-only commits pass).
-- **pre-push** — no default-branch push when a merged story lacks `docs/reviews/<id>.md` → `Ship allowed: yes`.
+So plan, ready, and review gates hold on Claude, Codex and Grok alike — enforcement lives in the repo, not the harness. CI template `dm-gate.yml` (copied at `/dm-init`) mirrors the ship / version checks on pull requests.
 
-So "no code without a validated plan" and "no ship without a passed review" hold on Claude, Codex and Gemini alike — enforcement lives in the repo, not the harness. For PR merges on the platform, the same `dm-gate ship-allowed <id>` check belongs in CI / branch protection.
+## Provenance
 
-## v0 status
-
-The structure is public, the valuable content is private. The `<< IP Mike >>` zones (boilerplate conventions, story granularity, anti-hallucination heuristics, severity thresholds) are intentionally empty in this version: they receive the proprietary content outside this repo.
+driven is a public GitHub fork of Mike Codeur's [killer-saas](https://github.com/MikeCodeur/killer-saas). Credit stays explicit in [NOTICE](NOTICE), [README.md](README.md), and this document. We keep the fork network and the principle of no direct feature coding; the additions above (hybrid PRD, board, wiki, version, Grok, quality bar) are the driven layer on top.

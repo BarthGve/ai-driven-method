@@ -1,13 +1,38 @@
 import { execFileSync, execSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync, chmodSync, readFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  writeFileSync,
+  mkdirSync,
+  chmodSync,
+  readFileSync,
+  cpSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
-const GATE = join(dirname(fileURLToPath(import.meta.url)), "..", "src/hooks/dm-gate.sh");
-const AGENTS = join(dirname(fileURLToPath(import.meta.url)), "..", "src/AGENTS.md");
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const GATE = join(ROOT, "src/hooks/dm-gate.sh");
+const AGENTS = join(ROOT, "src/AGENTS.md");
+const GH_STUB = join(ROOT, "tests/fixtures/gh-stub.sh");
+const LIB_SRC = join(ROOT, "src/lib");
+
+const BOARD_CONFIG = {
+  owner: "acme",
+  repo: "app",
+  project_id: "PVT_test",
+  project_number: 1,
+  status_field_id: "FIELD_status",
+  status_option_ids: {
+    backlog: "opt1",
+    ready: "opt2",
+    "in progress": "opt3",
+    test: "opt4",
+    shipped: "opt5",
+  },
+};
 
 function repo() {
   const d = mkdtempSync(join(tmpdir(), "dm-gate-"));
@@ -21,6 +46,51 @@ function repo() {
   return d;
 }
 
+function withBoard(d, issues) {
+  mkdirSync(join(d, ".dm/lib"), { recursive: true });
+  writeFileSync(join(d, ".dm/config.json"), JSON.stringify(BOARD_CONFIG, null, 2));
+  for (const name of ["dm-board.sh", "dm-config.sh"]) {
+    cpSync(join(LIB_SRC, name), join(d, ".dm/lib", name));
+    chmodSync(join(d, ".dm/lib", name), 0o755);
+  }
+  const statePath = join(d, "gh-state.json");
+  writeFileSync(
+    statePath,
+    JSON.stringify(
+      {
+        issues,
+        status_option_ids: BOARD_CONFIG.status_option_ids,
+        edits: [],
+      },
+      null,
+      2,
+    ),
+  );
+  const bin = join(d, "bin");
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(join(bin, "gh"), readFileSync(GH_STUB));
+  chmodSync(join(bin, "gh"), 0o755);
+  return { statePath, bin };
+}
+
+function childIssue(statusName, optionId) {
+  return {
+    title: "[s01-x/t01-y] Persist (M, 1.5d)",
+    number: 2,
+    projectItems: [{ id: "PVTI_2", status: { optionId, name: statusName } }],
+  };
+}
+
+function writeValidatedPlan(d) {
+  mkdirSync(join(d, "docs/plans"), { recursive: true });
+  writeFileSync(join(d, "docs/plans/s01-x.md"), "---\nvalidated: yes\n---\n");
+}
+
+function stageCode(d) {
+  writeFileSync(join(d, "code.js"), "1");
+  execSync("git add code.js", { cwd: d, stdio: "pipe" });
+}
+
 function runGate(cwd, args, opts = {}) {
   chmodSync(GATE, 0o755);
   return execFileSync("bash", [GATE, ...args], {
@@ -28,6 +98,10 @@ function runGate(cwd, args, opts = {}) {
     encoding: "utf8",
     stdio: ["pipe", "pipe", "pipe"],
     input: opts.input ?? "",
+    env: {
+      ...process.env,
+      ...(opts.env || {}),
+    },
   });
 }
 
@@ -151,4 +225,93 @@ test("AGENTS.md names next as integration and Quick Fix on next", () => {
   assert.match(t, /Quick Fix[\s\S]*\bnext\b/i);
   assert.doesNotMatch(t, /Quick Fix work happens only[\s\S]*on branch\s*`dev`/);
   assert.match(t, /critical or major|critical\s*\*\*or\*\*\s*major/i);
+});
+
+test("ready-ok passes when .dm/config.json is missing", () => {
+  const d = repo();
+  assert.equal(runGate(d, ["ready-ok", "s01-x/t01-y"]), "");
+});
+
+test("ready-ok fails for backlog when config exists", () => {
+  const d = repo();
+  const { statePath, bin } = withBoard(d, [childIssue("backlog", "opt1")]);
+  assert.throws(() =>
+    runGate(d, ["ready-ok", "s01-x/t01-y"], {
+      env: { PATH: `${bin}:${process.env.PATH}`, DM_GH_STUB_STATE: statePath },
+    }),
+  );
+});
+
+test("ready-ok passes for ready and in progress", () => {
+  for (const [name, opt] of [
+    ["ready", "opt2"],
+    ["in progress", "opt3"],
+  ]) {
+    const d = repo();
+    const { statePath, bin } = withBoard(d, [childIssue(name, opt)]);
+    assert.equal(
+      runGate(d, ["ready-ok", "s01-x/t01-y"], {
+        env: { PATH: `${bin}:${process.env.PATH}`, DM_GH_STUB_STATE: statePath },
+      }),
+      "",
+    );
+  }
+});
+
+test("pre-commit blocks code on ticket branch when board status is backlog", () => {
+  const d = repo();
+  const { statePath, bin } = withBoard(d, [childIssue("backlog", "opt1")]);
+  writeValidatedPlan(d);
+  execSync("git checkout -b feature/s01-x/t01-y next", { cwd: d, stdio: "pipe" });
+  stageCode(d);
+  assert.throws(() =>
+    runGate(d, ["pre-commit"], {
+      env: { PATH: `${bin}:${process.env.PATH}`, DM_GH_STUB_STATE: statePath },
+    }),
+  );
+});
+
+test("pre-commit allows code on ticket branch when board status is ready", () => {
+  const d = repo();
+  const { statePath, bin } = withBoard(d, [childIssue("ready", "opt2")]);
+  writeValidatedPlan(d);
+  execSync("git checkout -b feature/s01-x/t01-y next", { cwd: d, stdio: "pipe" });
+  stageCode(d);
+  assert.equal(
+    runGate(d, ["pre-commit"], {
+      env: { PATH: `${bin}:${process.env.PATH}`, DM_GH_STUB_STATE: statePath },
+    }),
+    "",
+  );
+});
+
+test("pre-commit allows docs-only even when board status is backlog", () => {
+  const d = repo();
+  const { statePath, bin } = withBoard(d, [childIssue("backlog", "opt1")]);
+  execSync("git checkout -b feature/s01-x/t01-y next", { cwd: d, stdio: "pipe" });
+  mkdirSync(join(d, "docs/notes"), { recursive: true });
+  writeFileSync(join(d, "docs/notes/x.md"), "note");
+  execSync("git add docs", { cwd: d, stdio: "pipe" });
+  assert.equal(
+    runGate(d, ["pre-commit"], {
+      env: { PATH: `${bin}:${process.env.PATH}`, DM_GH_STUB_STATE: statePath },
+    }),
+    "",
+  );
+});
+
+test("pre-commit allows code without config (board not initialized) when plan validated", () => {
+  const d = repo();
+  writeValidatedPlan(d);
+  execSync("git checkout -b feature/s01-x/t01-y next", { cwd: d, stdio: "pipe" });
+  stageCode(d);
+  assert.equal(runGate(d, ["pre-commit"]), "");
+});
+
+test("pre-commit refuses code on story framing branch", () => {
+  const d = repo();
+  writeValidatedPlan(d);
+  execSync("git checkout -b feature/s01-x next", { cwd: d, stdio: "pipe" });
+  stageCode(d);
+  assert.throws(() => runGate(d, ["pre-commit"]));
 });
