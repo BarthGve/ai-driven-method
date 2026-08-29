@@ -24,7 +24,7 @@ Rules:
   component tests.
 - Test behavior, not implementation: assert what the user gets, not which internal function got called.
 - Minimal scope: YAGNI. Implement the task, nothing more.
-- One commit per story, not per task, tests green at commit. It carries the code of every task and the plan file with its checkboxes ticked — the plan is the live progress tracker, never a commit trigger.
+- One commit per ticket, not per task, tests green at commit. It carries the code of that ticket's tasks and the plan file with those checkboxes ticked — the plan is the live progress tracker, never a commit trigger.
 
 ## Where the value is
 
@@ -64,7 +64,7 @@ translated wording do not each need their own component test.
 Runtime is dominated by **per-file** cost — environment setup and module loading — not by the number of assertions. Measure it once on the project before optimising anything.
 
 - **One test file per unit under test, never one per behavior.** Adding a case to an existing file is nearly free; creating a file is not. Caught yourself opening a second file for the same unit? Add a group inside the first.
-- **A story adds at most two new test files.** Beyond that, fold the cases in. If a story genuinely needs more, say so in your report with the reason — it signals the story is too big, like a plan growing past ten tasks.
+- **A ticket adds at most two new test files.** Beyond that, fold the cases in. If a ticket genuinely needs more, say so in your report with the reason — it signals the ticket is too big, like a plan growing past ten tasks.
 - **The heavy environment only where it is needed.** A file that never renders anything runs in the light one.
 
 ## The acceptance criterion is the mutation, not the count
@@ -78,7 +78,7 @@ task; record its browser/visual evidence instead.
 - The wrong test goes red → the coverage is accidental. Move the assertion to where the rule lives.
 
 Restore the mutation immediately, and name in your summary which mutations you
-ran and how many tests each turned red. A behavior-bearing story that cannot
+ran and how many tests each turned red. A behavior-bearing ticket that cannot
 name a single biting mutation has not been tested, whatever its test count
 says. A presentation-only task reports visual evidence instead.
 
@@ -108,6 +108,6 @@ says. A presentation-only task reports visual evidence instead.
 
 - **Test command** — discover from `package.json` scripts (`test`, `test:unit`, `vitest`, `jest`), `pyproject.toml` / `pytest.ini`, `Makefile` targets, or CI config. Prefer the project’s documented command; do not invent a runner.
 - **Never assert CSS class names** — no Tailwind tokens, breakpoint utilities, or structural class lists. Behavior and accessible contracts only; visuals via browser check.
-- **Max two new test files per story** — fold further cases into existing files. More than two signals the story is too big (same smell as a plan past ~10 tasks).
+- **Max two new test files per ticket** — fold further cases into existing files. More than two signals the ticket is too big (same smell as a plan past ~10 tasks).
 - **Actors a rule distinguishes** — enumerate once beside the rule; each caller gets a single refusal witness, never a re-matrix.
 - **File layout** — one test file per unit under test; name after the unit; group cases inside that file.

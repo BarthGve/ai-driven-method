@@ -39,4 +39,4 @@ Proceed as follows:
 3. Fill each section of the template with my answers. Fill nothing you haven't validated with me.
 4. Write the result to `docs/prd.md` and commit it on the default branch (docs: prd).
 
-End with: "PRD ready in docs/prd.md. Next step: /dm-stories"
+End with: "PRD ready in docs/prd.md. Next step: /dm-init"

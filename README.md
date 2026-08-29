@@ -20,17 +20,32 @@ cross-cutting, or uncertain, the normal pipeline remains mandatory. See
 [DOC.md](DOC.md#quick-fix-mode) for the complete boundary.
 
 ## Pipeline
-PRD → Init (board / wiki / `VERSION`) → User Stories → Stories Review → Architecture + Design System → then, per story: Research → Design → Plan → Docs → then, per ticket: Execute → Review → Ship → Release
 
-![driven pipeline overview](docs/images/pipeline-overview-dark.png)
+PRD → Init (board / wiki / `VERSION`) → User Stories → Stories Review → Architecture + Design System → then, per story: Research → Design → Plan → Docs → then, per ticket: Execute → Review → Ship → Release (`next` → `main`).
 
 Full method documentation: [DOC.md](DOC.md)
 
 ### Framing — once per product
-![Framing phase](docs/images/framing-dark.png)
 
-### Per story / ticket — the cycle
-![Per-story cycle](docs/images/story-cycle-dark.png)
+`/dm-prd` → `/dm-init` → `/dm-stories` → `/dm-stories-review` → `/dm-architect` → `/dm-design-system`
+
+Hybrid PRD: clone an existing SaaS **or** greenfield. Then board, wiki, `main`/`next`.
+
+### Per story — docs on `feature/<story-id>`
+
+`/dm-research <story>` → `/dm-design <story>` → `/dm-plan <story>` (child tickets) → `/dm-docs <story>`
+
+Story branches are docs only. `ready` is **child-only**.
+
+### Per ticket — code on `feature/<story-id>/<ticket-id>` into `next`
+
+`/dm-execute <story> <ticket>` → `/dm-review <story> <ticket>` → `/dm-ship <story> <ticket>`
+
+One worktree, one branch, one commit, one PR per ticket. Child must be `ready`.
+
+### Production
+
+`/dm-release` — parents in `test`, bump `VERSION`, squash-merge `next` → `main`, tag, wiki, board `shipped`.
 
 ## Install
 
@@ -160,3 +175,13 @@ What it does — and doesn't:
     /dm-help
 
 On **Codex** / **Grok**, the same steps run as skills or commands (e.g. `dm-prd`, `dm-execute`) — same order, same gates. The git hooks (`--hooks`) enforce the pipeline the same way on every tool.
+
+## Manual smoke
+
+Method CI does not live-mutate GitHub. After install, smoke `/dm-init` on a **throwaway** repo:
+
+    mkdir /tmp/dm-smoke && cd /tmp/dm-smoke && git init -b main
+    # install driven into this directory (see Install), then in the tool:
+    /dm-prd
+    /dm-init
+    # confirm remote / board / wiki, then delete the throwaway repo

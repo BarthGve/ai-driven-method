@@ -24,6 +24,11 @@ If you can't invoke the Agent tool, stop and report the error. Don't improvise.
 
 ### Step 1 — Delegate
 Resolve $ARGUMENTS to `<story-id>` and `<ticket-id>`.
+Board gate (child only), same as execute:
+```bash
+bash .dm/lib/dm-board.sh require-ready <story-id>/<ticket-id>
+```
+Exit non-zero → STOP: move the child to `ready` on the Project board first (parent US never uses `ready`).
 Locate `.worktrees/<story-id>/<ticket-id>`, verify branch `feature/<story-id>/<ticket-id>`, and use that absolute worktree. Missing → STOP.
 Invoke the Agent tool:
 - subagent_type: reviewer

@@ -18,6 +18,12 @@ STOP; never checkout the feature branch in the repository base directory.
 Run: `grep -q '^Ship allowed: yes' docs/reviews/<story-id>/<ticket-id>.md`
 If the file is missing or the command fails, STOP immediately: "Ship blocked — review missing or negative. Run /dm-review <story-id> <ticket-id>." Nothing below runs without a passing gate.
 
+Board gate (child only), same as execute:
+```bash
+bash .dm/lib/dm-board.sh require-ready <story-id>/<ticket-id>
+```
+Exit non-zero → STOP: move the child to `ready` (or it must already be `in progress`) first. Parent US never uses `ready`.
+
 Require `docs/product/<story-id>.md` (from `/dm-docs`). Missing → STOP: "Product doc required — run /dm-docs <story-id>."
 
 Then proceed:

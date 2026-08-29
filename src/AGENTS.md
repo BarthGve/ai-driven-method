@@ -3,9 +3,9 @@
 ## Absolute rule
 No direct coding. Every feature goes through the driven pipeline, in order:
 
-PRD → User Stories → Architecture (+ Design System) → then, per story: Research → Design → Plan → Execute → Review → Ship
+PRD → Init → Stories → Stories Review → Architecture (+ Design System) → then, per story: Research → Design → Plan → Docs → then, per ticket: Execute → Review → Ship. Production: Release (`next` → `main`).
 
-No code is written before the story has a validated plan (`/dm-plan`). No feature ships before a passed review (`/dm-review`).
+No code is written before the story has a validated plan (`/dm-plan`) and the **child ticket** is `ready`. No feature ships before a passed review (`/dm-review`). `ready` is child-only — a parent US never uses it.
 
 ### Quick Fix mode — exception to the pipeline
 
@@ -47,24 +47,28 @@ the base directory. If another agent is working there, coordinate ownership or
 stop; never overlap edits.
 
 ## Pipeline (commands)
-- `/dm-prd`        frames the kill: target SaaS, kill mode, perimeter (WHAT + WHY)
-- `/dm-stories`    breaks it down into shippable user stories
+- `/dm-prd`        frames the product: clone an existing SaaS **or** greenfield (WHAT + WHY). Not kill-only.
+- `/dm-init`       GitHub remote, `main`/`next`, Project board, wiki, `VERSION`, CI
+- `/dm-stories`    breaks it down into shippable user stories (parent Issues)
 - `/dm-stories-review`  reviews the breakdown against the PRD perimeter (stories-reviewer subagent)
-- `/dm-architect`  sets the technical HOW + the conventions
+- `/dm-architect`  sets the technical HOW + the conventions (fills `<< IP Mike >>` below)
 - `/dm-design-system`  captures the global design system (docs/design-system.md)
 - `/dm-research`   explores the story's real context (current code, APIs, traps)
 - `/dm-design`     derives a story's screen from the design system (UI stories)
-- `/dm-plan`       breaks a story into sequenced tasks / child tickets
-- `/dm-execute`    implements a ticket in TDD (implementer subagent)
+- `/dm-plan`       breaks a story into sequenced child tickets (size + person-day estimates)
+- `/dm-docs`       product page `docs/product/<story-id>.md` (wiki publish is release)
+- `/dm-execute`    implements a **ticket** in TDD (implementer subagent)
 - `/dm-review`     quality-bar review + gate (reviewer subagent)
-- `/dm-ship`       opens the PR into `next`; merge/deploy per the ship strategy (manual by default)
+- `/dm-ship`       opens the PR into `next`; merge per the ship strategy (manual by default)
+- `/dm-release`    production: `next` → `main`, semver, wiki, board `shipped`
 
 Utilities:
-- `/dm-orchestrator`  runs a ticket's execute → review → ship cycle with human checkpoints
+- `/dm-orchestrator`  two modes: `<story>` = framing (research → design → plan → docs); `<story> <ticket>` = execute → review → ship. Human checkpoints, not an autopilot.
 - `/dm-help`          prints the pipeline map (French, user-facing cheat sheet)
-- `/dm-status`        derives the project's pipeline state from the files (framing, per-story progress, next command)
+- `/dm-status`        derives pipeline state (framing, per-US progress, **remaining person-days** on children not yet `test`/`shipped`, next command)
 
-One user story = Research → Design → Plan (child tickets) → then per ticket Execute → Review → Ship into `next`. Production ships via `next` → `main` (release).
+One user story = Research → Design → Plan (child tickets) → Docs → then per ticket Execute → Review → Ship into `next`. Production ships via `/dm-release` (`next` → `main`).
+`ready` exists **only on child tickets**. Parent US: backlog → in progress → test → shipped (never `ready`).
 
 ## Git branches
 
@@ -135,7 +139,8 @@ All pipeline data lives in markdown files under docs/, versioned by git. No data
 - Framing docs — docs/prd.md, docs/stories.md, docs/reviews/stories.md, docs/architecture.md, docs/design-system.md: land on `next` (then `main` via release). (docs/reviews/stories.md reviews the breakdown, not a story: it is a framing doc.)
 - Story docs — docs/research/<id>.md, docs/designs/<id>* (brief, md, html), docs/plans/<id>.md, docs/product/<id>.md: committed on `feature/<id>`, then into `next`.
 - Ticket reviews — docs/reviews/<story-id>/<ticket-id>.md: committed on the ticket branch; /dm-ship commits the review. Every ticket PR carries its review.
-- Task progress — the checkboxes in docs/plans/<id>.md: the implementer ticks each task as it lands. The plan file is the live progress tracker, never a commit trigger.
+- Task progress — the checkboxes in docs/plans/<id>.md: the implementer ticks each **ticket** task as it lands. The plan file is the live progress tracker, never a commit trigger.
+- Estimates — each child ticket has `size` (XS–XL) and `estimate` (person-days, 0.5 steps). US total = sum. **Remaining person-days** = sum of estimates of children not yet `test` or `shipped` (`/dm-status`). No actuals in V1.
 - Commits — **one commit per ticket** (squash into `next`). A second commit only for something you would want to revert on its own (typically a migration). One release = one squash commit on `main`.
 - Decisions — docs/decisions/NNN-<slug>.md (MADR format, @templates/adr.md): one file per structural decision, with the considered options and why they were rejected. Immutable: a change means a new ADR superseding the old one.
 

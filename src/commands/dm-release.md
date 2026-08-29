@@ -19,7 +19,23 @@ Present the candidate US ids (and their children) to the user.
 ## Step 2 — Semver
 AskUserQuestion: bump type — options major / **minor** (default) / patch.
 
-## Step 3 — Bump on `next`
+## Step 3 — Bump on `next` (once per release)
+Refuse a second bump if `VERSION` on `next` already differs from `main` **and** a release PR is already open:
+
+```bash
+git fetch origin main next
+main_ver="$(git show origin/main:VERSION 2>/dev/null | tr -d '[:space:]' || true)"
+next_ver="$(tr -d '[:space:]' < VERSION)"
+if [ -n "$main_ver" ] && [ "$next_ver" != "$main_ver" ]; then
+  open="$(gh pr list --base main --head next --state open --json url --jq '.[0].url // empty')"
+  if [ -n "$open" ]; then
+    echo "Release already in flight ($open). VERSION on next is $next_ver vs main $main_ver. Do not bump again — squash-merge that PR."
+    exit 1
+  fi
+fi
+```
+
+If that check passes:
 ```bash
 bash .dm/lib/dm-version.sh bump <major|minor|patch>
 ```
@@ -31,10 +47,19 @@ gh pr create --base main --head next --title "Release v$(cat VERSION)" --body "�
 ```
 Do **not** merge in this command unless the user explicitly confirms an auto merge. Default: stop at the open PR.
 
+**Always squash-merge** this PR (`gh pr merge --squash` or the GitHub squash-merge button). One release = one commit on `main`. Never merge-commit `next` into `main`.
+
 ## Step 5 — After MERGED only
 Prove merge: `gh pr view <url> --json state --jq .state` must be `MERGED`. Then:
 
-1. Tag: `git tag "v$(cat VERSION)"` on the merge commit / `main`, push the tag.
+1. Fetch `origin/main` and tag **that** SHA (the squash commit on `main`), never a `next` SHA:
+   ```bash
+   git fetch origin main
+   ver="$(tr -d '[:space:]' < VERSION)"
+   main_sha="$(git rev-parse origin/main)"
+   git tag "v${ver}" "$main_sha"
+   git push origin "v${ver}"
+   ```
 2. Wiki (one page per US in this release):
    ```bash
    bash .dm/lib/dm-wiki.sh publish "$(pwd)" "$(cat VERSION)" <story-id...>

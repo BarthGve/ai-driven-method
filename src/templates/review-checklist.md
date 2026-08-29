@@ -1,7 +1,8 @@
-# Review — Story <id>
+# Review — Ticket <story-id>/<ticket-id>
 
 > Fresh-context review. Each issue classified: critical / major / minor.
-> Diff reviewed: `git diff <default-branch>...feature/<id>`
+> Diff reviewed: `git diff next...feature/<story-id>/<ticket-id>`
+> Report path: `docs/reviews/<story-id>/<ticket-id>.md`
 
 ## Plan compliance
 - [ ] The code does what the plan specifies, nothing more
@@ -33,7 +34,7 @@
 - [ ] Test suite run by the reviewer, passing
 - [ ] Assertions pin the acceptance criteria (no assertion-free tests)
 - [ ] Bite proven by neutralization: <what was neutralized> → <N> tests red, restored (`git diff --exit-code` clean)
-- [ ] Tests the story made redundant are named and removed — or their absence justified
+- [ ] Tests the ticket made redundant are named and removed — or their absence justified
 
 ## Regressions
 - [ ] No impact on existing code paths
