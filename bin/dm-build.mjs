@@ -6,6 +6,7 @@
 //
 // Targets:
 //   claude  identity: commands/, skills/, agents/ copied as-is (parity with the bash path)
+//   grok    same tree as Claude (destined for .grok/ by install.sh)
 //   codex   commands -> Codex skills (SKILL.md + agents/openai.yaml), methodology skills
 //           verbatim, agents -> skills with a model note. AGENTS.md is native (handled by install.sh).
 //
@@ -119,7 +120,7 @@ function emitCodex(src, out) {
   }
 }
 
-// ---- CLAUDE EMISSION (identity, for --target all / parity testing) --------
+// ---- CLAUDE / GROK EMISSION (identity tree; Grok dest is .grok/ via install.sh) --------
 
 function emitClaude(src, out) {
   for (const kind of ["commands", "skills", "agents"]) {
@@ -130,6 +131,10 @@ function emitClaude(src, out) {
   }
 }
 
+function emitGrok(src, out) {
+  emitClaude(src, out);
+}
+
 // ---- MAIN -----------------------------------------------------------------
 
 const args = parseArgs(process.argv.slice(2));
@@ -137,11 +142,12 @@ const target = args.target;
 const src = args.src;
 const out = args.out;
 if (!target || !src || !out) {
-  console.error("usage: dm-build.mjs --target claude|codex --src <dir> --out <dir>");
+  console.error("usage: dm-build.mjs --target claude|codex|grok --src <dir> --out <dir>");
   process.exit(2);
 }
 ensureDir(out);
 if (target === "codex") emitCodex(src, out);
 else if (target === "claude") emitClaude(src, out);
+else if (target === "grok") emitGrok(src, out);
 else { console.error(`unknown target: ${target}`); process.exit(2); }
 console.log(`dm-build: emitted ${target} into ${out}`);

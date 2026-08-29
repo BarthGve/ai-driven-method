@@ -6,10 +6,12 @@ set -euo pipefail
 # Usage :
 #   ./install.sh                       Projet (défaut), cible Claude Code
 #   ./install.sh --target codex        Projet, cible Codex (.codex/skills + AGENTS.md)
-#   ./install.sh --target all          Projet, Claude + Codex
+#   ./install.sh --target grok         Projet, cible Grok (.grok/commands + skills + agents)
+#   ./install.sh --target all          Projet, Claude + Codex + Grok
 #   ./install.sh --global              Global Claude (~/.claude) — commandes dans tous les repos
 #   ./install.sh --global --target codex   Global Codex (~/.codex/skills)
-#   ./install.sh --global --target all      Global Claude + Codex
+#   ./install.sh --global --target grok    Global Grok (~/.grok)
+#   ./install.sh --global --target all      Global Claude + Codex + Grok
 #   ./install.sh init [--target …]     Pose templates + rules dans le projet (après un global)
 #   ./install.sh update [--target …]   Met à jour le tooling + templates (préserve tes modifs)
 #   --hooks                            Pose les git hooks d'enforcement (opt-in, réversible)
@@ -92,6 +94,25 @@ copy_tooling_codex() {
   rm -rf "$stg"
 }
 
+# Grok : même arbre que Claude (commands + skills + agents) via le build Node → .grok/.
+copy_tooling_grok() {
+  local dest="$1" stg
+  command -v node >/dev/null 2>&1 || { echo "✗ Node required for grok target." >&2; return 1; }
+  stg="$(mktemp -d)"
+  node "$PAYLOAD_ROOT/bin/dm-build.mjs" --target grok --src "$SRC" --out "$stg" >/dev/null
+  clean_tooling "$dest"
+  mkdir -p "$dest/commands" "$dest/skills" "$dest/agents"
+  cp -R "$stg/commands/." "$dest/commands/"
+  cp -R "$stg/skills/."   "$dest/skills/"
+  cp -R "$stg/agents/."   "$dest/agents/"
+  : > "$dest/.dm-manifest"
+  for f in "$dest/commands/"*.md; do echo "commands/$(basename "$f")" >> "$dest/.dm-manifest"; done
+  for f in "$dest/skills/"*/;     do echo "skills/$(basename "$f")"   >> "$dest/.dm-manifest"; done
+  for f in "$dest/agents/"*.md;   do echo "agents/$(basename "$f")"   >> "$dest/.dm-manifest"; done
+  echo "$VERSION" > "$dest/.dm-version"
+  rm -rf "$stg"
+}
+
 # Copie un template seulement s'il est absent ou non modifié localement (baseline : $ORIG).
 sync_templates() {
   local payload="$1" f name
@@ -152,11 +173,16 @@ install_target() {
       copy_tooling_codex "./.codex"
       sync_templates "$SRC"; drop_agents_md "$SRC"   # AGENTS.md natif Codex, pas de CLAUDE.md
       echo "✅ driven installé (Codex, projet, version $VERSION). Skills : dm-prd … dm-ship dans .codex/skills." ;;
+    grok)
+      copy_tooling_grok "./.grok"
+      sync_templates "$SRC"; drop_agents_md "$SRC"   # AGENTS.md partagé, pas de CLAUDE.md requis
+      echo "✅ driven installé (Grok, projet, version $VERSION). Commandes : dm-prd … dm-ship dans .grok/commands." ;;
     all)
       install_target claude
-      install_target codex ;;
+      install_target codex
+      install_target grok ;;
     *)
-      echo "Cible inconnue : $1 (claude|codex|all)" >&2; exit 1 ;;
+      echo "Cible inconnue : $1 (claude|codex|grok|all)" >&2; exit 1 ;;
   esac
 }
 
@@ -182,12 +208,15 @@ case "$MODE" in
       codex)
         copy_tooling_codex "$HOME/.codex"; seed_cache
         echo "✅ Tooling installé (global Codex, version $VERSION). Skills dans ~/.codex/skills." ;;
+      grok)
+        copy_tooling_grok "$HOME/.grok"; seed_cache
+        echo "✅ Tooling installé (global Grok, version $VERSION). Commandes dans ~/.grok." ;;
       all)
-        copy_tooling_claude "$HOME/.claude"; copy_tooling_codex "$HOME/.codex"; seed_cache
-        echo "✅ Tooling installé (global Claude + Codex, version $VERSION)." ;;
-      *) echo "Cible inconnue : $TARGET (claude|codex|all)" >&2; exit 1 ;;
+        copy_tooling_claude "$HOME/.claude"; copy_tooling_codex "$HOME/.codex"; copy_tooling_grok "$HOME/.grok"; seed_cache
+        echo "✅ Tooling installé (global Claude + Codex + Grok, version $VERSION)." ;;
+      *) echo "Cible inconnue : $TARGET (claude|codex|grok|all)" >&2; exit 1 ;;
     esac
-    echo "→ Dans chaque projet : ~/.claude/ai-driven-method/install.sh init [--target codex] [--hooks]"
+    echo "→ Dans chaque projet : ~/.claude/ai-driven-method/install.sh init [--target codex|grok] [--hooks]"
     ;;
 
   init)
@@ -206,7 +235,7 @@ case "$MODE" in
 
   *)
     echo "Option inconnue : $MODE" >&2
-    echo "Usage : ./install.sh [--target claude|codex|all] [--hooks] [--global | init | update] [--force]" >&2
+    echo "Usage : ./install.sh [--target claude|codex|grok|all] [--hooks] [--global | init | update] [--force]" >&2
     exit 1
     ;;
 esac

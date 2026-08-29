@@ -56,6 +56,18 @@ To install the Codex skills globally instead:
 The Codex target requires Node.js and installs the skills in `.codex/skills`
 for a project install or `~/.codex/skills` for a global install.
 
+**Grok:**
+
+    cd your-project
+    curl -fsSL https://raw.githubusercontent.com/BarthGve/ai-driven-method/main/install.sh | bash -s -- --target grok
+
+To install Grok tooling globally instead:
+
+    curl -fsSL https://raw.githubusercontent.com/BarthGve/ai-driven-method/main/install.sh | bash -s -- --global --target grok
+
+The Grok target requires Node.js and installs commands, skills, and agents in
+`.grok/` for a project install or `~/.grok` for a global install.
+
 Prefer to read before you run? Clone the repo somewhere, then run the script from your project's root:
 
     git clone https://github.com/BarthGve/ai-driven-method.git ~/tools/ai-driven-method
@@ -68,17 +80,20 @@ One source of truth, one installer, per-tool output. Pick a **target** with `--t
 
     ./install.sh                           # Claude Code, project (default)
     ./install.sh --target codex            # Codex, project → .codex/skills + AGENTS.md
-    ./install.sh --target all              # Claude + Codex, project
+    ./install.sh --target grok             # Grok, project → .grok/commands + skills + agents
+    ./install.sh --target all              # Claude + Codex + Grok, project
     ./install.sh --global                  # Claude, global (commands in every repo)
     ./install.sh --global --target codex   # Codex, global → ~/.codex/skills
-    ./install.sh --global --target all     # both, global
+    ./install.sh --global --target grok    # Grok, global → ~/.grok
+    ./install.sh --global --target all     # all three, global
 
 After a global install, drop the per-project files (templates + rules) in each project:
 
     ~/.claude/ai-driven-method/install.sh init                 # Claude
     ~/.claude/ai-driven-method/install.sh init --target codex  # Codex
+    ~/.claude/ai-driven-method/install.sh init --target grok   # Grok
 
-`AGENTS.md` (the rules) is shared and read natively by both tools; on Claude a one-line `CLAUDE.md` imports it. The 4 skills are the open `SKILL.md` standard, so they carry over unchanged; the 13 `dm-*` commands are emitted as Codex skills. Gemini CLI is planned next — see the fidelity matrix in [DOC.md](DOC.md).
+`AGENTS.md` (the rules) is shared and read natively by Codex and Grok; on Claude a one-line `CLAUDE.md` imports it. The 4 skills are the open `SKILL.md` standard, so they carry over unchanged; the 13 `dm-*` commands are emitted as Codex skills, and copied as-is for Claude/Grok. Gemini CLI is planned next — see the fidelity matrix in [DOC.md](DOC.md).
 
 When maintaining driven itself, edit only `src/AGENTS.md`. The root
 `AGENTS.md` and `CLAUDE.md` are ignored local-install artifacts; `CLAUDE.md`
@@ -102,13 +117,14 @@ From your project's root:
 
     ~/tools/ai-driven-method/install.sh update              # Claude
     ~/tools/ai-driven-method/install.sh update --target codex   # Codex
+    ~/tools/ai-driven-method/install.sh update --target grok    # Grok
     # or, without a clone:
     curl -fsSL https://raw.githubusercontent.com/BarthGve/ai-driven-method/main/install.sh | bash -s -- update
     # overwrite locally modified templates too:
     curl -fsSL https://raw.githubusercontent.com/BarthGve/ai-driven-method/main/install.sh | bash -s -- update --force
 
 What it does — and doesn't:
-- Cleanly replaces the method's tooling, tracked per target in `.dm-manifest` (`.claude/` or `.codex/` — your own commands/skills are never touched, renamed or removed files leave no ghosts).
+- Cleanly replaces the method's tooling, tracked per target in `.dm-manifest` (`.claude/`, `.codex/`, or `.grok/` — your own commands/skills are never touched, renamed or removed files leave no ghosts).
 - Refreshes the templates you haven't modified; a locally modified template is never overwritten (you get a warning instead — add `--force` to overwrite).
 - Stamps the installed version in `.dm-version`.
 - Never touches `AGENTS.md`: if the method's rules evolved, merge by hand.
