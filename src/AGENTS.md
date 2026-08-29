@@ -39,11 +39,12 @@ or visual browser check when applicable). TDD and subagent review are optional,
 not forbidden.
 
 Quick Fix work happens only in the repository's base directory on branch
-`dev`. It never gets a feature branch or a worktree. Before editing, check the
-current branch. If it is not `dev`, stop and ask the user whether they really
-want to continue on that non-`dev` branch; never switch branches automatically.
-Before editing, verify that no other agent owns the base directory. If another
-agent is working there, coordinate ownership or stop; never overlap edits.
+`next`. It never gets a feature branch or a worktree, and it never edits `main`.
+Before editing, check the current branch. If it is not `next`, stop and ask the
+user whether they really want to continue on that non-`next` branch; never
+switch branches automatically. Before editing, verify that no other agent owns
+the base directory. If another agent is working there, coordinate ownership or
+stop; never overlap edits.
 
 ## Pipeline (commands)
 - `/dm-prd`        frames the kill: target SaaS, kill mode, perimeter (WHAT + WHY)
@@ -53,58 +54,72 @@ agent is working there, coordinate ownership or stop; never overlap edits.
 - `/dm-design-system`  captures the global design system (docs/design-system.md)
 - `/dm-research`   explores the story's real context (current code, APIs, traps)
 - `/dm-design`     derives a story's screen from the design system (UI stories)
-- `/dm-plan`       breaks a story into sequenced tasks
-- `/dm-execute`    implements the story in TDD (implementer subagent)
-- `/dm-review`     anti-hallucination review + gate (reviewer subagent)
-- `/dm-ship`       opens the PR; merge/deploy per the ship strategy (manual by default)
+- `/dm-plan`       breaks a story into sequenced tasks / child tickets
+- `/dm-execute`    implements a ticket in TDD (implementer subagent)
+- `/dm-review`     quality-bar review + gate (reviewer subagent)
+- `/dm-ship`       opens the PR into `next`; merge/deploy per the ship strategy (manual by default)
 
 Utilities:
-- `/dm-orchestrator`  runs a story's full cycle with human checkpoints (plan validation, ship confirmation)
+- `/dm-orchestrator`  runs a ticket's execute → review → ship cycle with human checkpoints
 - `/dm-help`          prints the pipeline map (French, user-facing cheat sheet)
 - `/dm-status`        derives the project's pipeline state from the files (framing, per-story progress, next command)
 
-One feature = one Research → Design → Plan → Execute → Review → Ship cycle = one branch = one PR (Design only when the story has UI).
+One user story = Research → Design → Plan (child tickets) → then per ticket Execute → Review → Ship into `next`. Production ships via `next` → `main` (release).
+
+## Git branches
+
+| Branch | Role | Rule |
+| --- | --- | --- |
+| `main` | production | only updated from `next` (GitHub branch protection is the real guarantee) |
+| `next` | integration | PRs from `feature/*`; Quick Fix lands here |
+| `feature/<story-id>` | story framing (research, design, plan, product doc) | docs only, created from `next` |
+| `feature/<story-id>/<ticket-id>` | one child ticket | implementation worktree, created from `next` |
 
 ## Where work happens
 
-There are exactly two modes. A complexity score never chooses the directory:
+There are exactly three modes. A complexity score never chooses the directory:
 
 | Mode | Working directory | Branch |
 | --- | --- | --- |
-| Explicit Quick Fix | Repository base directory | `dev`; if another branch is checked out, stop and ask before continuing |
-| Feature / story | Dedicated `.worktrees/<story-id>/` worktree | Exact `feature/<story-id>` branch |
+| Explicit Quick Fix | Repository base directory | `next`; if another branch is checked out, stop and ask before continuing |
+| Story framing (research / design / plan / docs) | `.worktrees/<story-id>/` | Exact `feature/<story-id>` (docs only) |
+| Ticket implementation | `.worktrees/<story-id>/<ticket-id>/` | Exact `feature/<story-id>/<ticket-id>` |
 
 Every change that is not explicitly announced and eligible as a Quick Fix is a
-feature. A feature uses its dedicated worktree from Research through Design,
-Plan, Execute, Review and Ship, regardless of its complexity score. Never
-create or check out a feature branch in the repository base directory.
+feature. Story framing uses the story worktree; implementation uses the ticket
+worktree. Never create or check out a feature branch in the repository base
+directory.
 
-The `worktree-manager` subagent creates or verifies the worktree before
-Research begins. It imports untracked `.env*` files and installs dependencies
-inside the worktree. Before every later story phase, resolve and state the
-absolute worktree path and verify the exact branch. Missing worktree, wrong
-branch, detached HEAD or a second branch name is a hard stop. Never improvise
-with `git switch`, `git checkout`, `git stash` or an `-isolated` suffix.
+The `worktree-manager` subagent creates or verifies the worktree from `next`
+before Research (story) or Execute (ticket). It imports untracked `.env*` files
+and installs dependencies inside the worktree. Before every later phase, resolve
+and state the absolute worktree path and verify the exact branch. Missing
+worktree, wrong branch, detached HEAD or a second branch name is a hard stop.
+Never improvise with `git switch`, `git checkout`, `git stash` or an
+`-isolated` suffix.
 
 One agent, one working directory. While an agent owns a directory, no second
 agent and no main context may edit, checkout or stash in it.
 
-## Story ids and branches
-- Every story has an id: `s<number>-<short-slug>` (e.g. `s01-submit-testimonial`). It is assigned in docs/stories.md and reused verbatim everywhere: `docs/research/<id>.md`, `docs/plans/<id>.md`, `docs/reviews/<id>.md`, branch `feature/<id>`.
-- All work on a story happens on `feature/<id>`, branched from the default branch. Never commit story work to the default branch.
-- The story diff = `git diff <default-branch>...feature/<id>`. That is what the review judges.
-- A command that receives a fuzzy story name resolves it against docs/stories.md; if there is no unambiguous match, it lists the available stories and stops.
+## Story ids, tickets and branches
+- Every story has an id: `s<number>-<short-slug>` (e.g. `s01-submit-testimonial`). It is assigned in docs/stories.md and reused verbatim: `docs/research/<id>.md`, `docs/plans/<id>.md`, `docs/product/<id>.md`, branch `feature/<id>`.
+- `/dm-plan` decomposes the US into child tickets `t<number>-<slug>`. Full work id: `<story-id>/<ticket-id>` (e.g. `s01-submit-testimonial/t01-persist-entry`). Ticket branch: `feature/<story-id>/<ticket-id>`. Ticket review: `docs/reviews/<story-id>/<ticket-id>.md`.
+- Story framing and ticket branches are created from `next`. Never commit feature work to `main`.
+- The ticket diff = `git diff next...feature/<story-id>/<ticket-id>`. That is what the review judges.
+- A command that receives a fuzzy story name resolves it against docs/stories.md; a second argument is a ticket id resolved against docs/plans/<story-id>.md. Ambiguous → list matches and stop.
 
 ## Gate (mechanical)
-- The review report `docs/reviews/<id>.md` must end with the exact lines `Max severity: <critical|major|minor|none>` and `Ship allowed: <yes|no>`. A single critical = no.
+- The ticket review `docs/reviews/<story-id>/<ticket-id>.md` must end with the exact lines `Max severity: <critical|major|minor|none>` and `Ship allowed: <yes|no>`. A single critical or major = no.
 - `/dm-ship` refuses to run unless that file exists and contains the line `Ship allowed: yes`. No file, no line, or `no` → ship blocked. No exceptions.
 - After a blocked review, `/dm-execute` runs in fix mode: the review findings are fed to the implementer and fixed before anything else.
 - A plan executes only if its frontmatter says `validated: yes` — set by the human validation checkpoint (/dm-plan or the orchestrator), never by the file merely existing. /dm-execute is fail-closed on it.
+- `dm-gate.sh` treats `next` as the integration branch and `main` as production. Client-side pre-push refuses non-`next` updates to `main`; GitHub branch protection is the real guarantee for `main`.
 
 ## Ship strategy
 Merge mode: manual   (manual | auto — default: manual)
-- manual: /dm-ship opens the PR and stops. Merging is a human decision (review on GitHub, protected branch, CI). After the merge, rerun /dm-ship to confirm the deployment and clean up the branch.
-- auto: /dm-ship merges and deploys immediately after the gate. Only for solo flows where running /dm-ship IS the decision.
+Target of `/dm-ship`: **`next`** (per ticket). Production (`main`) is updated only by releasing `next` → `main`.
+- manual: /dm-ship opens the PR into `next` and stops. Merging is a human decision (review on GitHub, protected branch, CI). After the merge, rerun /dm-ship to confirm cleanup. Parent US moves to `test` only when every child is `test` or `shipped`.
+- auto: /dm-ship merges into `next` immediately after the gate. Only for solo flows where running /dm-ship IS the decision.
 
 ## Design
 The global design system lives in `docs/design-system.md` (components + tokens, anchored to the boilerplate). Each story's design lives in `docs/designs/<id>.md` (+ a reference `.html` mockup).
@@ -115,20 +130,18 @@ The global design system lives in `docs/design-system.md` (components + tokens, 
 - Stories without UI skip `/dm-design`.
 
 ## Data & docs lifecycle
-All pipeline data lives in markdown files under docs/, versioned by git. No database, no state file: the pipeline state is derived from the files (a story is planned if docs/plans/<id>.md exists, shipped if its review says `Ship allowed: yes` and the branch is merged) — a derived state can't go stale.
+All pipeline data lives in markdown files under docs/, versioned by git. No database, no state file: the pipeline state is derived from the files (a story is planned if docs/plans/<id>.md exists, a ticket is shippable if its review says `Ship allowed: yes` and the branch is merged into `next`) — a derived state can't go stale.
 
-- Framing docs — docs/prd.md, docs/stories.md, docs/reviews/stories.md, docs/architecture.md, docs/design-system.md: committed on the default branch at the end of their phase. (docs/reviews/stories.md reviews the breakdown, not a story: it is a framing doc, unlike docs/reviews/<id>.md which travels with its branch.)
-- Story docs — docs/research/<id>.md, docs/designs/<id>* (brief, md, html), docs/plans/<id>.md, docs/reviews/<id>.md: committed on feature/<id>. The implementer's single story commit brings the research, the design and the plan; /dm-ship commits the review. Every PR carries its own research, design, plan and review.
-- Task progress — the checkboxes in docs/plans/<id>.md: the implementer ticks each task as it lands, and they travel in the story's commit. The plan file is the live progress tracker, never a commit trigger.
-- Commits — **one commit per story**, not one per plan task. A second commit only for something you would want to revert on its own (typically a migration). The branch's commits are squashed at merge, so the default branch gets one commit per story.
-- Decisions — docs/decisions/NNN-<slug>.md (MADR format, @templates/adr.md): one file per structural decision, with the considered options and why they were rejected. Immutable: a change means a new ADR superseding the old one. Framing decisions commit on the default branch; story decisions travel with feature/<id>.
+- Framing docs — docs/prd.md, docs/stories.md, docs/reviews/stories.md, docs/architecture.md, docs/design-system.md: land on `next` (then `main` via release). (docs/reviews/stories.md reviews the breakdown, not a story: it is a framing doc.)
+- Story docs — docs/research/<id>.md, docs/designs/<id>* (brief, md, html), docs/plans/<id>.md, docs/product/<id>.md: committed on `feature/<id>`, then into `next`.
+- Ticket reviews — docs/reviews/<story-id>/<ticket-id>.md: committed on the ticket branch; /dm-ship commits the review. Every ticket PR carries its review.
+- Task progress — the checkboxes in docs/plans/<id>.md: the implementer ticks each task as it lands. The plan file is the live progress tracker, never a commit trigger.
+- Commits — **one commit per ticket** (squash into `next`). A second commit only for something you would want to revert on its own (typically a migration). One release = one squash commit on `main`.
+- Decisions — docs/decisions/NNN-<slug>.md (MADR format, @templates/adr.md): one file per structural decision, with the considered options and why they were rejected. Immutable: a change means a new ADR superseding the old one.
 
 ## Technical conventions
 << IP Mike: boilerplate structure, stack, patterns, naming, commit rules. >>
 
-## Definition of Done (per feature)
-- Single PR, structured description, readable diff
-- Passing tests on business logic
-- No regression on existing code
-- Review passed (no open critical issue)
-- Deployed to production
+## Definition of Done (per ticket / release)
+- Ticket: single PR into `next`, structured description, readable diff, passing tests, review passed (no open critical or major), merged to `next`
+- Release: `next` → `main`, version bumped, deployed to production

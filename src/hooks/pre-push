@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# driven — installed via core.hooksPath. Blocks pushing the default branch when a
-# merged story has no passed review. Reads <local ref> <local sha> <remote ref> <remote sha> on stdin.
+# driven — installed via core.hooksPath. Refuses non-next pushes into main; blocks
+# integrating a ticket into next without Ship allowed: yes. Reads
+# <local ref> <local sha> <remote ref> <remote sha> on stdin.
 set -euo pipefail
 exec "$(dirname "$0")/dm-gate.sh" pre-push
