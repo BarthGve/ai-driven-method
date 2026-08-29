@@ -1,0 +1,19 @@
+driven is a fork of killer-saas
+https://github.com/MikeCodeur/killer-saas
+Original method: Mike Codeur (MikeCodeur)
+
+This repository keeps git history and the GitHub fork relationship.
+Upstream, at the time of the fork, had no LICENSE file. Files inherited
+from killer-saas are not relicensed here.
+
+Zones marked "<< IP Mike >>" in upstream were empty placeholders.
+Heuristics and commands added in driven are fork additions.
+
+Material changes in driven vs killer-saas:
+- hybrid PRD (clone a SaaS or greenfield)
+- install target for Grok in addition to Claude Code and Codex
+- GitHub Project board with ready-gate
+- product wiki publish on release
+- main / next git flow
+- quality bar that blocks ship on major findings
+- semver bump on next → main

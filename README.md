@@ -1,3 +1,15 @@
+# ai-driven-method
+
+A fork of [killer-saas](https://github.com/MikeCodeur/killer-saas) by [Mike Codeur](https://github.com/MikeCodeur).
+
+Commands: `/dm-*`.
+
+driven keeps the original pipeline (no direct coding, file gates, subagents)
+and adds: hybrid PRD (clone or greenfield), Grok install, GitHub board + wiki,
+`main`/`next` flow, a stricter quality bar, and semver on release.
+
+See [NOTICE](NOTICE) and [DOC.md](DOC.md).
+
 # killer-saas
 
 A complete agentic pipeline to kill a SaaS: pick a target, cut the 20% that matters, rebuild it on your boilerplate, ship it to production.
