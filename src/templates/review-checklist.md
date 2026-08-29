@@ -12,6 +12,18 @@
 - [ ] No plausible-but-wrong value or logic
 - [ ] The code matches what it claims to do
 
+## Security
+- [ ] No injection (SQL/command/template/shell) from untrusted input
+- [ ] Authz next to the rule; no authz bypass
+- [ ] No secrets in source, logs, or client bundles
+- [ ] No IDOR (object access scoped by ownership)
+- [ ] No XSS from unescaped user content
+- [ ] No sensitive data in logs
+
+## Factorization
+- [ ] One business rule, one place (no duplicated rule or copied flow)
+- [ ] No speculative abstraction; no unevolvable module introduced in this diff
+
 ## Rules compliance
 - [ ] Repo conventions followed (AGENTS.md)
 - [ ] No accepted ADR contradicted (docs/decisions/)

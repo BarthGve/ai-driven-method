@@ -16,7 +16,7 @@ Target story: $ARGUMENTS
 You MUST complete this command by delegating to the `reviewer` subagent (fresh context). You are FORBIDDEN from:
 - Judging the code yourself: you are probably the context that produced it, hence blind to your own hallucinations.
 - Modifying source code. Your only write right is the report docs/reviews/<id>.md, nothing else.
-- Unblocking the Ship if a critical issue is reported.
+- Unblocking the Ship if a critical or major issue is reported.
 
 If you can't invoke the Agent tool, stop and report the error. Don't improvise.
 
@@ -31,13 +31,13 @@ switch branches. Then invoke the Agent tool:
 - subagent_type: reviewer
 - description: Anti-hallucination review of story <id>
 - working directory: the absolute dedicated worktree path verified above.
-- prompt: Review story <id>. The story diff is `git diff <default-branch>...feature/<id>` — judge that diff, and only that diff, against docs/plans/<id>.md, docs/research/<id>.md when it exists, AGENTS.md and the accepted ADRs in docs/decisions/. When docs/design-system.md and docs/designs/<id>.md exist, also check conformity to the design system and to the screen's INTENT — not to the mockup HTML line by line; any component, token or color outside the system is drift to classify (major by default, critical if it breaks the product's visual coherence). Run the test suite yourself; don't trust reported results. The review-antihallu skill is preloaded. Fill the checklist from templates/review-checklist.md, classify each issue (critical / major / minor), and end your report with the exact lines "Max severity: <critical|major|minor|none>" and "Ship allowed: <yes|no>".
+- prompt: Review story <id>. The story diff is `git diff <default-branch>...feature/<id>` — judge that diff, and only that diff, against docs/plans/<id>.md, docs/research/<id>.md when it exists, AGENTS.md and the accepted ADRs in docs/decisions/. When docs/design-system.md and docs/designs/<id>.md exist, also check conformity to the design system and to the screen's INTENT — not to the mockup HTML line by line; any component, token or color outside the system is drift to classify (major by default, critical if it breaks the product's visual coherence). Run the test suite yourself; don't trust reported results. The quality-bar skill is preloaded (security, factorization, anti-hallucination, severity). Fill the checklist from templates/review-checklist.md, classify each issue (critical / major / minor), and end your report with the exact lines "Max severity: <critical|major|minor|none>" and "Ship allowed: <yes|no>". A single critical or major = Ship allowed: no.
 
 Wait for the verdict.
 
 ### Step 2 — Report
-Write the full report to docs/reviews/<id>.md. It MUST end with the exact lines `Max severity: ...` and `Ship allowed: yes` or `Ship allowed: no` — /dm-ship greps that line, and without it the ship stays blocked. A single critical = no.
+Write the full report to docs/reviews/<id>.md. It MUST end with the exact lines `Max severity: ...` and `Ship allowed: yes` or `Ship allowed: no` — /dm-ship greps that line, and without it the ship stays blocked. A single critical or major = no.
 
 ### Step 3 — Gate (fail-closed)
-- Verdict with a CRITICAL → Ship blocked. End with: "Ship blocked (critical). Fix via /dm-execute <id> (fix mode), then rerun /dm-review <id>."
+- Verdict with a CRITICAL or MAJOR → Ship blocked. End with: "Ship blocked (critical or major). Fix via /dm-execute <id> (fix mode), then rerun /dm-review <id>."
 - Otherwise → End with: "Review passed. Next step: /dm-ship <id>"
