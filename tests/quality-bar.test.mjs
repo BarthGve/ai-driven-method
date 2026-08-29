@@ -15,8 +15,33 @@ test("reviewer preloads quality-bar", () => {
   assert.match(t, /quality-bar/);
 });
 
-test("review checklist includes security and factorization", () => {
+test("reviewer judges ticket diff vs next", () => {
+  const t = readFileSync("src/agents/reviewer.md", "utf8");
+  assert.match(t, /git diff next\.\.\.feature\/<story-id>\/<ticket-id>/);
+  assert.match(t, /docs\/reviews\/<story-id>\/<ticket-id>\.md/);
+});
+
+test("review checklist is per ticket", () => {
   const t = readFileSync("src/templates/review-checklist.md", "utf8");
   assert.match(t, /Security/i);
   assert.match(t, /Factor/i);
+  assert.match(t, /git diff next\.\.\.feature\/<story-id>\/<ticket-id>/);
+  assert.match(t, /docs\/reviews\/<story-id>\/<ticket-id>\.md/);
+});
+
+test("implementer is ticket-scoped", () => {
+  const t = readFileSync("src/agents/implementer.md", "utf8");
+  assert.match(t, /\.worktrees\/<story-id>\/<ticket-id>/);
+  assert.match(t, /feature\/<story-id>\/<ticket-id>/);
+  assert.match(t, /one single commit for the ticket/);
+  assert.doesNotMatch(t, /one single commit for the whole story/);
+  assert.doesNotMatch(t, /\.worktrees\/<story-id>`/);
+});
+
+test("tdd-skill is one commit per ticket", () => {
+  const t = readFileSync("src/skills/tdd-skill/SKILL.md", "utf8");
+  assert.match(t, /One commit per ticket/);
+  assert.match(t, /Max two new test files per ticket/);
+  assert.doesNotMatch(t, /One commit per story/);
+  assert.doesNotMatch(t, /per story/);
 });

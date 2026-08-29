@@ -13,4 +13,17 @@ test("README credits upstream and names driven", () => {
   const t = readFileSync("README.md", "utf8");
   assert.match(t, /https:\/\/github.com\/MikeCodeur\/killer-saas/);
   assert.match(t, /ai-driven-method/);
+  assert.match(t, /Mike Codeur/);
+});
+
+test("README uses a text pipeline and a manual smoke note", () => {
+  const t = readFileSync("README.md", "utf8");
+  assert.doesNotMatch(t, /docs\/images\//);
+  assert.doesNotMatch(t, /\/ks-/);
+  assert.match(t, /\/dm-prd/);
+  assert.match(t, /\/dm-init/);
+  assert.match(t, /\/dm-release/);
+  assert.match(t, /feature\/<story-id>\/<ticket-id>/);
+  assert.match(t, /Manual smoke/);
+  assert.match(t, /throwaway/);
 });

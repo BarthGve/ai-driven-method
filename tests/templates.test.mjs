@@ -9,9 +9,10 @@ test("prd template has hybrid mode", () => {
   assert.doesNotMatch(t, /<< IP Mike/);
 });
 
-test("prd command asks clone vs greenfield first", () => {
+test("prd command asks clone vs greenfield first and next step is init", () => {
   const t = readFileSync("src/commands/dm-prd.md", "utf8");
   assert.match(t, /greenfield/i);
+  assert.match(t, /Next step: \/dm-init/);
 });
 
 test("skills have no empty IP placeholders", () => {

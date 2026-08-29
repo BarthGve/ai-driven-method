@@ -67,11 +67,16 @@ case "$args" in
       const argv=process.argv.slice(1);
       const get=flag=>{const i=argv.indexOf(flag); return i>=0?argv[i+1]:null;};
       const title=get("-t")||get("--title")||"untitled";
+      const bodyFile=get("-F")||get("--body-file");
+      let body="";
+      if (bodyFile) body=fs.readFileSync(bodyFile,"utf8");
       const n=(s.issues||[]).reduce((m,i)=>Math.max(m,i.number||0),0)+1;
       const issue={
         title,
         number:n,
         id:"I_"+n,
+        body,
+        labels:[],
         projectItems:[{id:"PVTI_"+n, status:{optionId:"opt1", name:"backlog"}}]
       };
       s.issues=s.issues||[];
@@ -81,10 +86,54 @@ case "$args" in
     ' "$@"
     ;;
   *"project item-add"*)
+    node -e '
+      const fs=require("fs");
+      const s=JSON.parse(fs.readFileSync(process.env.DM_GH_STUB_STATE,"utf8"));
+      s.item_add_calls=(s.item_add_calls||0)+1;
+      const n=s.item_add_fail_remaining||0;
+      if (n>0) {
+        s.item_add_fail_remaining=n-1;
+        fs.writeFileSync(process.env.DM_GH_STUB_STATE, JSON.stringify(s,null,2));
+        process.exit(1);
+      }
+      fs.writeFileSync(process.env.DM_GH_STUB_STATE, JSON.stringify(s,null,2));
+    '
     echo '{"id":"PVTI_added"}'
     ;;
   *"api graphql"*|*"api graphql"*)
-    echo '{}'
+    node -e '
+      const s=JSON.parse(require("fs").readFileSync(process.env.DM_GH_STUB_STATE,"utf8"));
+      if (s.subissue_fail) process.exit(1);
+      process.stdout.write("{}");
+    '
+    ;;
+  *"label create"*)
+    echo '{"name":"ticket"}'
+    ;;
+  *"issue edit"*)
+    node -e '
+      const fs=require("fs");
+      const s=JSON.parse(fs.readFileSync(process.env.DM_GH_STUB_STATE,"utf8"));
+      const argv=process.argv.slice(1);
+      const get=flag=>{const i=argv.indexOf(flag); return i>=0?argv[i+1]:null;};
+      const num=argv.find((a)=>/^\d+$/.test(a));
+      const issue=(s.issues||[]).find((i)=>String(i.number)===String(num));
+      if (!issue) process.exit(1);
+      const bf=get("--body-file");
+      if (bf) issue.body=fs.readFileSync(bf,"utf8");
+      const lab=get("--add-label")||get("-l");
+      if (lab) {
+        issue.labels=issue.labels||[];
+        if (!issue.labels.includes(lab)) issue.labels.push(lab);
+      }
+      s.edits=s.edits||[];
+      s.edits.push({kind:"issue-edit", number:Number(num), labels:issue.labels||[], body:issue.body||""});
+      fs.writeFileSync(process.env.DM_GH_STUB_STATE, JSON.stringify(s,null,2));
+    ' "$@"
+    echo '{"ok":true}'
+    ;;
+  *"auth token"*|*"auth setup-git"*)
+    echo "stub-token"
     ;;
   *)
     echo "gh-stub: unhandled: $args" >&2

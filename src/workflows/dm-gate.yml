@@ -13,35 +13,61 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ticket PR into next — Ship allowed
+      - name: Refuse PRs into main that are not from next
+        if: github.base_ref == 'main' && github.head_ref != 'next'
+        run: |
+          echo "dm-gate: PRs into main must come from next (got head '${{ github.head_ref }}')"
+          exit 1
+
+      - name: Feature PR into next — ticket ship gate or framing docs-only
         if: github.base_ref == 'next' && startsWith(github.head_ref, 'feature/')
         run: |
           set -euo pipefail
-          # feature/<story>/<ticket> → docs/reviews/<story>/<ticket>.md
-          # feature/<story> alone → story framing (docs); skip ship gate
           ref="${{ github.head_ref }}"
-          story="${ref#feature/}"
-          case "$story" in
+          rest="${ref#feature/}"
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          changed="$(git diff --name-only "${base_sha}...HEAD" || true)"
+          case "$rest" in
             */*)
-              review="docs/reviews/${story}.md"
+              review="docs/reviews/${rest}.md"
               if [ ! -f "$review" ]; then
                 echo "dm-gate: missing $review"
                 exit 1
               fi
               grep -q '^Ship allowed: yes' "$review"
+              story_id="${rest%%/*}"
+              product="docs/product/${story_id}.md"
+              if [ -f "$product" ]; then
+                echo "dm-gate: product doc present ($product)"
+              else
+                echo "dm-gate: missing $product — ticket PRs require the story product doc"
+                exit 1
+              fi
               ;;
             *)
-              echo "dm-gate: story framing PR — skip ticket ship gate"
+              echo "dm-gate: story framing PR — docs-only (no app code)"
+              bad=0
+              while IFS= read -r f; do
+                [ -z "$f" ] && continue
+                case "$f" in
+                  docs/*) ;;
+                  *)
+                    echo "dm-gate: framing PR must be docs-only; found app file: $f"
+                    bad=1
+                    ;;
+                esac
+              done <<< "$changed"
+              [ "$bad" -eq 0 ]
               ;;
           esac
 
-      - name: Release PR next → main — VERSION bumped
+      - name: Release PR next → main — VERSION bumped + changelog
         if: github.base_ref == 'main' && github.head_ref == 'next'
         run: |
           set -euo pipefail
           git fetch origin "${{ github.base_ref }}" --depth=1
-          base_ver="$(git show "origin/${{ github.base_ref }}:VERSION" 2>/dev/null || true)"
-          head_ver="$(cat VERSION 2>/dev/null || true)"
+          base_ver="$(git show "origin/${{ github.base_ref }}:VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
+          head_ver="$(tr -d '[:space:]' < VERSION 2>/dev/null || true)"
           if [ -z "$head_ver" ]; then
             echo "dm-gate: VERSION missing on next"
             exit 1
@@ -49,5 +75,11 @@ jobs:
           if [ "$head_ver" = "$base_ver" ]; then
             echo "dm-gate: VERSION unchanged vs main ($head_ver) — bump before release"
             exit 1
+          fi
+          if [ -f CHANGELOG.md ]; then
+            if ! grep -Fq "$head_ver" CHANGELOG.md; then
+              echo "dm-gate: CHANGELOG.md exists but does not mention $head_ver"
+              exit 1
+            fi
           fi
           echo "dm-gate: VERSION $base_ver → $head_ver"

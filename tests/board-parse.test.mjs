@@ -1,10 +1,11 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
   mkdtempSync,
   writeFileSync,
   chmodSync,
   mkdirSync,
   readFileSync,
+  existsSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
@@ -211,4 +212,153 @@ test("init assert-status-ids fails when any status id missing", () => {
       stdio: ["pipe", "pipe", "pipe"],
     }),
   );
+});
+
+test("issue-create-ticket writes Parent and ticket label when sub-issue fails", () => {
+  const { d, statePath, bin } = appDir([
+    {
+      title: "[s01-x] Parent US",
+      number: 1,
+      id: "I_parent",
+      projectItems: [
+        { id: "PVTI_1", status: { optionId: "opt1", name: "backlog" } },
+      ],
+    },
+  ]);
+  const state = JSON.parse(readFileSync(statePath, "utf8"));
+  state.subissue_fail = true;
+  writeFileSync(statePath, JSON.stringify(state, null, 2));
+  const body = join(d, "body.md");
+  writeFileSync(body, "ticket body\n");
+  runBoard(d, bin, statePath, [
+    "issue-create-ticket",
+    "s01-x",
+    "t01-y",
+    "Persist",
+    body,
+  ]);
+  const after = JSON.parse(readFileSync(statePath, "utf8"));
+  const child = after.issues.find((i) =>
+    (i.title || "").startsWith("[s01-x/t01-y]"),
+  );
+  assert.ok(child, "child issue created");
+  assert.match(child.body || "", /Parent: #1/);
+  assert.ok((child.labels || []).includes("ticket"));
+});
+
+test("item-add is retried once", () => {
+  const { d, statePath, bin } = appDir([]);
+  const state = JSON.parse(readFileSync(statePath, "utf8"));
+  state.item_add_fail_remaining = 1;
+  writeFileSync(statePath, JSON.stringify(state, null, 2));
+  const body = join(d, "body.md");
+  writeFileSync(body, "us body\n");
+  runBoard(d, bin, statePath, ["issue-create-us", "s01-x", "Parent", body]);
+  const after = JSON.parse(readFileSync(statePath, "utf8"));
+  assert.equal(after.item_add_calls, 2);
+  assert.equal(after.item_add_fail_remaining, 0);
+});
+
+function gitInitRepo(d) {
+  execFileSync("git", ["init", "-b", "main"], { cwd: d, stdio: "pipe" });
+  execFileSync("git", ["config", "user.email", "t@t"], { cwd: d, stdio: "pipe" });
+  execFileSync("git", ["config", "user.name", "t"], { cwd: d, stdio: "pipe" });
+  writeFileSync(join(d, "README.md"), "x\n");
+  execFileSync("git", ["add", "README.md"], { cwd: d, stdio: "pipe" });
+  execFileSync("git", ["commit", "-m", "i"], { cwd: d, stdio: "pipe" });
+}
+
+test("dm-init --no-remote does not call gh api for wiki or rulesets", () => {
+  const d = mkdtempSync(join(tmpdir(), "init-noremote-"));
+  gitInitRepo(d);
+  mkdirSync(join(d, ".dm"), { recursive: true });
+  writeFileSync(join(d, ".dm/config.json"), JSON.stringify(CONFIG, null, 2));
+  const log = join(d, "gh-log.txt");
+  const bin = join(d, "bin");
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(
+    join(bin, "gh"),
+    `#!/bin/sh
+echo "$@" >> "${log}"
+case "$*" in
+  *"has_wiki"*|*"branches/"*"/protection"*|*"rulesets"*)
+    echo "dm-init --no-remote must not call wiki/ruleset gh api: $*" >&2
+    exit 7
+    ;;
+esac
+exit 0
+`,
+  );
+  chmodSync(join(bin, "gh"), 0o755);
+  chmodSync(INIT, 0o755);
+  execFileSync(
+    "bash",
+    [INIT, "run", "--yes", "--no-remote", "--owner", "acme", "--repo", "app"],
+    {
+      cwd: d,
+      encoding: "utf8",
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+    },
+  );
+  const logged = existsSync(log) ? readFileSync(log, "utf8") : "";
+  assert.doesNotMatch(logged, /has_wiki|protection|rulesets/);
+});
+
+test("dm-init warns when branch protection fails", () => {
+  const d = mkdtempSync(join(tmpdir(), "init-prot-"));
+  gitInitRepo(d);
+  execFileSync("git", ["remote", "add", "origin", "git@github.com:acme/app.git"], {
+    cwd: d,
+    stdio: "pipe",
+  });
+  mkdirSync(join(d, ".dm"), { recursive: true });
+  writeFileSync(join(d, ".dm/config.json"), JSON.stringify(CONFIG, null, 2));
+  const log = join(d, "gh-log.txt");
+  const bin = join(d, "bin");
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(
+    join(bin, "gh"),
+    `#!/bin/sh
+echo "$@" >> "${log}"
+case "$*" in
+  *"branches/"*"/protection"*)
+    echo '{"message":"not allowed"}' >&2
+    exit 1
+    ;;
+  *"rulesets"*)
+    echo "[]" >&2
+    exit 1
+    ;;
+  *"-q .node_id"*)
+    echo "REPO_NODE"
+    exit 0
+    ;;
+  *"has_wiki"*)
+    exit 0
+    ;;
+esac
+exit 0
+`,
+  );
+  chmodSync(join(bin, "gh"), 0o755);
+  chmodSync(INIT, 0o755);
+  const res = spawnSync(
+    "bash",
+    [INIT, "run", "--yes", "--owner", "acme", "--repo", "app"],
+    {
+      cwd: d,
+      encoding: "utf8",
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+    },
+  );
+  assert.equal(res.status, 0, res.stderr);
+  assert.match(res.stderr, /WARNING:.*NOT protected/i);
+});
+
+test("dm-wiki clones with gh credentials", () => {
+  const t = readFileSync(join(ROOT, "src/lib/dm-wiki.sh"), "utf8");
+  assert.match(t, /gh auth token/);
+  assert.match(t, /GH_TOKEN/);
+  assert.match(t, /gh auth setup-git/);
+  assert.match(t, /x-access-token/);
 });

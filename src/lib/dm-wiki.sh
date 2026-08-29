@@ -20,18 +20,33 @@ cmd_publish() {
 
   local owner="$DM_OWNER" repo="$DM_REPO"
   local wiki_url="https://github.com/${owner}/${repo}.wiki.git"
+  local token=""
+  if [ -n "${GH_TOKEN:-}" ]; then
+    token="$GH_TOKEN"
+  elif [ -n "${GITHUB_TOKEN:-}" ]; then
+    token="$GITHUB_TOKEN"
+  elif command -v gh >/dev/null; then
+    token="$(gh auth token 2>/dev/null || true)"
+  fi
+  if command -v gh >/dev/null; then
+    gh auth setup-git >/dev/null 2>&1 || true
+  fi
+  local clone_url="$wiki_url"
+  if [ -n "$token" ]; then
+    clone_url="https://x-access-token:${token}@github.com/${owner}/${repo}.wiki.git"
+  fi
   local tmp
   tmp="$(mktemp -d "${TMPDIR:-/tmp}/dm-wiki.XXXXXX")"
   cleanup() { rm -rf "$tmp"; }
   trap cleanup EXIT
 
-  # Clone or init wiki
-  if ! git clone --depth 1 "$wiki_url" "$tmp/wiki" 2>/dev/null; then
+  # Clone or init wiki (authenticated via gh token / GH_TOKEN / gh auth setup-git)
+  if ! git clone --depth 1 "$clone_url" "$tmp/wiki" 2>/dev/null; then
     mkdir -p "$tmp/wiki"
     (
       cd "$tmp/wiki"
       git init -b master
-      git remote add origin "$wiki_url"
+      git remote add origin "$clone_url"
       printf '# %s\n' "$repo" >Home.md
       git add Home.md
       git -c user.email="${GIT_AUTHOR_EMAIL:-dm-wiki@localhost}" \

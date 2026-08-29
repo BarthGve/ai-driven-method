@@ -183,51 +183,71 @@ create_remote_if_needed() {
   gh repo create "${OWNER}/${REPO_NAME}" "$vis_flag" --source=. --remote=origin --push
 }
 
+warn() { echo "dm-init: WARNING: $*" >&2; }
+
 enable_wiki() {
-  gh api -X PATCH "repos/${OWNER}/${REPO_NAME}" -f has_wiki=true >/dev/null
+  if [ "$CREATE_REMOTE" -eq 0 ]; then
+    echo "dm-init: --no-remote — skip wiki enable (no GitHub repo)" >&2
+    return 0
+  fi
+  if ! git remote get-url origin >/dev/null 2>&1; then
+    warn "no origin remote — wiki not enabled (not inventing fake protection)"
+    return 0
+  fi
+  if ! gh api -X PATCH "repos/${OWNER}/${REPO_NAME}" -f has_wiki=true >/dev/null; then
+    warn "failed to enable wiki for ${OWNER}/${REPO_NAME}"
+  fi
+}
+
+protect_branch() {
+  local branch="$1"
+  if ! gh api -X PUT "repos/${OWNER}/${REPO_NAME}/branches/${branch}/protection" \
+    -H "Accept: application/vnd.github+json" \
+    --input - >/dev/null <<JSON
+{
+  "required_status_checks": null,
+  "enforce_admins": $([ "$branch" = main ] && echo true || echo false),
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 0
+  },
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+JSON
+  then
+    warn "branch protection for '${branch}' FAILED — ${branch} is NOT protected. Set it in GitHub so $( [ "$branch" = main ] && echo "only next can merge into main" || echo "feature/* PRs are required into next" ). Do not assume protection is on."
+    return 0
+  fi
+  return 0
 }
 
 # Repository rulesets: main ← only next; next ← feature/*
 apply_rulesets() {
+  if [ "$CREATE_REMOTE" -eq 0 ]; then
+    echo "dm-init: --no-remote — skip branch protection and rulesets (no GitHub repo)" >&2
+    return 0
+  fi
+  if ! git remote get-url origin >/dev/null 2>&1; then
+    warn "no origin remote — branch protection and rulesets NOT applied"
+    return 0
+  fi
+
   local repo_id
-  repo_id="$(gh api "repos/${OWNER}/${REPO_NAME}" -q .node_id)"
+  if ! repo_id="$(gh api "repos/${OWNER}/${REPO_NAME}" -q .node_id)"; then
+    warn "cannot read repo ${OWNER}/${REPO_NAME} — branch protection NOT applied"
+    return 0
+  fi
 
-  # main: require PR; restrict to head ref next via ruleset conditions is limited —
-  # use pull_request + required_review; plus branch name pattern restriction via rules.
-  # Classic protection as baseline:
-  gh api -X PUT "repos/${OWNER}/${REPO_NAME}/branches/main/protection" \
-    -H "Accept: application/vnd.github+json" \
-    --input - >/dev/null 2>&1 <<'JSON' || true
-{
-  "required_status_checks": null,
-  "enforce_admins": true,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 0
-  },
-  "restrictions": null,
-  "allow_force_pushes": false,
-  "allow_deletions": false
-}
-JSON
+  protect_branch main
+  protect_branch next
 
-  gh api -X PUT "repos/${OWNER}/${REPO_NAME}/branches/next/protection" \
-    -H "Accept: application/vnd.github+json" \
-    --input - >/dev/null 2>&1 <<'JSON' || true
-{
-  "required_status_checks": null,
-  "enforce_admins": false,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 0
-  },
-  "restrictions": null,
-  "allow_force_pushes": false,
-  "allow_deletions": false
-}
-JSON
-
-  # Ruleset: main only accepts merges from next (branch name pattern on PR source via rulesets API)
-  create_or_update_ruleset "driven-main" "main" "next" || true
-  create_or_update_ruleset "driven-next" "next" "feature/*" || true
+  if ! create_or_update_ruleset "driven-main" "main" "next"; then
+    warn "ruleset driven-main not applied — main is NOT restricted to next"
+  fi
+  if ! create_or_update_ruleset "driven-next" "next" "feature/*"; then
+    warn "ruleset driven-next not applied — next is NOT restricted to feature/*"
+  fi
   unset repo_id
 }
 
@@ -370,8 +390,12 @@ cmd_run() {
   copy_ci_workflow
   create_remote_if_needed
   ensure_next_branch
-  enable_wiki
-  apply_rulesets
+  if [ "$CREATE_REMOTE" -eq 1 ]; then
+    enable_wiki
+    apply_rulesets
+  else
+    echo "dm-init: --no-remote — skip wiki enable, branch protection, and rulesets (no gh api)" >&2
+  fi
   create_project_and_config
   push_branches
   echo "dm-init: done — ${OWNER}/${REPO_NAME} (VERSION=$(tr -d '[:space:]' <VERSION))"

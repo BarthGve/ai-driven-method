@@ -227,6 +227,30 @@ test("AGENTS.md names next as integration and Quick Fix on next", () => {
   assert.match(t, /critical or major|critical\s*\*\*or\*\*\s*major/i);
 });
 
+test("AGENTS.md lists init docs release, hybrid PRD, child ready, orchestrator modes", () => {
+  const t = readFileSync(AGENTS, "utf8");
+  assert.match(t, /\/dm-init/);
+  assert.match(t, /\/dm-docs/);
+  assert.match(t, /\/dm-release/);
+  assert.match(t, /PRD → Init → Stories/);
+  assert.match(t, /greenfield/i);
+  assert.match(t, /Not kill-only/);
+  assert.match(t, /child-only|only on child tickets/i);
+  assert.match(t, /two modes/);
+  assert.match(t, /remaining person-days/);
+  assert.match(t, /<< IP Mike/);
+});
+
+test("dm-gate.yml refuses non-next PRs into main and gates ticket/framing/release", () => {
+  const t = readFileSync(join(ROOT, "src/workflows/dm-gate.yml"), "utf8");
+  assert.match(t, /github.head_ref != 'next'/);
+  assert.match(t, /PRs into main must come from next/);
+  assert.match(t, /Ship allowed: yes/);
+  assert.match(t, /docs\/product\//);
+  assert.match(t, /docs-only/);
+  assert.match(t, /CHANGELOG\.md/);
+});
+
 test("ready-ok passes when .dm/config.json is missing", () => {
   const d = repo();
   assert.equal(runGate(d, ["ready-ok", "s01-x/t01-y"]), "");

@@ -206,18 +206,23 @@ extract_issue_number_from_url() {
 
 add_issue_to_project_backlog() {
   local url="$1"
+  local key_guess="$2"
   local number item_id
   number="$(extract_issue_number_from_url "$url")"
-  # Prefer item-add by url when project_number is known
   if [ -n "${DM_PROJECT_NUMBER:-}" ]; then
-    "$(gh_bin)" project item-add "$DM_PROJECT_NUMBER" \
+    if ! "$(gh_bin)" project item-add "$DM_PROJECT_NUMBER" \
       --owner "$DM_OWNER" \
       --url "$url" \
-      --format json >/dev/null 2>&1 || true
+      --format json >/dev/null 2>&1; then
+      echo "dm-board: item-add failed for issue #${number} (${key_guess}), retrying once" >&2
+      if ! "$(gh_bin)" project item-add "$DM_PROJECT_NUMBER" \
+        --owner "$DM_OWNER" \
+        --url "$url" \
+        --format json >/dev/null 2>&1; then
+        echo "dm-board: WARNING: issue #${number} (${key_guess}) could not be added to the project board" >&2
+      fi
+    fi
   fi
-  # Refresh and set backlog
-  local key_guess="$2"
-  # Wait briefly for projectItems to appear is not needed in stub; live may need re-fetch
   if item_id="$(issue_project_item_id "$key_guess" 2>/dev/null)"; then
     local option_id
     option_id="$(dm_config_status_option_id "backlog")"
@@ -228,10 +233,28 @@ add_issue_to_project_backlog() {
       --single-select-option-id "$option_id" \
       >/dev/null
   else
-    # Fallback: list may not yet include item; issue create with --project may have added it.
-    :
+    echo "dm-board: WARNING: issue #${number} (${key_guess}) has no project item — not on the board" >&2
   fi
   printf '%s\n' "$number"
+}
+
+# When GitHub sub-issues are unavailable: Parent: #<n> in the body + label ticket.
+fallback_parent_link() {
+  local child_num="$1" parent_num="$2" body_file="$3"
+  local repo tmp
+  repo="$(dm_config_repo)"
+  tmp="$(mktemp)"
+  cat "$body_file" >"$tmp"
+  if ! grep -q "^Parent: #${parent_num}$" "$tmp" 2>/dev/null; then
+    printf '\n\nParent: #%s\n' "$parent_num" >>"$tmp"
+  fi
+  "$(gh_bin)" label create ticket -R "$repo" --force >/dev/null 2>&1 || \
+    echo "dm-board: WARNING: could not ensure label 'ticket'" >&2
+  if ! "$(gh_bin)" issue edit "$child_num" -R "$repo" \
+    --body-file "$tmp" --add-label ticket >/dev/null; then
+    echo "dm-board: WARNING: failed to write Parent: #${parent_num} on issue #${child_num}" >&2
+  fi
+  rm -f "$tmp"
 }
 
 cmd_issue_create_us() {
@@ -261,10 +284,11 @@ cmd_issue_create_ticket() {
   full_title="[${key}] ${title}"
   url="$("$(gh_bin)" issue create -R "$(dm_config_repo)" -t "$full_title" -F "$body_file")"
   child_num="$(add_issue_to_project_backlog "$url" "$key")"
-  # Link as sub-issue when parent exists (best-effort)
+  # Link as sub-issue when parent exists; on failure write Parent: #<n> + label ticket
   if parent_raw="$(find_issue_json "$story_id" 2>/dev/null)"; then
     parent_id="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).id||"")' "$parent_raw")"
-    local child_id
+    local parent_num child_id sub_ok=0
+    parent_num="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).number||""))' "$parent_raw")"
     child_id="$(node -e '
       const issues=JSON.parse(require("fs").readFileSync(0,"utf8"));
       const key=process.argv[1];
@@ -273,8 +297,14 @@ cmd_issue_create_ticket() {
       process.stdout.write(hit && hit.id ? hit.id : "");
     ' "$key" <<<"$(issues_json)" 2>/dev/null || true)"
     if [ -n "$parent_id" ] && [ -n "$child_id" ]; then
-      "$(gh_bin)" api graphql -f query='mutation($p:ID!,$c:ID!){addSubIssue(input:{issueId:$p,subIssueId:$c}){issue{id}}}' \
-        -f p="$parent_id" -f c="$child_id" >/dev/null 2>&1 || true
+      if "$(gh_bin)" api graphql -f query='mutation($p:ID!,$c:ID!){addSubIssue(input:{issueId:$p,subIssueId:$c}){issue{id}}}' \
+        -f p="$parent_id" -f c="$child_id" >/dev/null 2>&1; then
+        sub_ok=1
+      fi
+    fi
+    if [ "$sub_ok" -eq 0 ] && [ -n "$parent_num" ]; then
+      echo "dm-board: WARNING: addSubIssue failed for $key — writing Parent: #${parent_num} and label ticket" >&2
+      fallback_parent_link "$child_num" "$parent_num" "$body_file"
     fi
   fi
   printf '%s\n' "$child_num"

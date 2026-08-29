@@ -36,6 +36,26 @@ test("execute requires child ready", () => {
   assert.match(readFileSync("src/commands/dm-execute.md", "utf8"), /require-ready/);
 });
 
+test("review and ship require child ready", () => {
+  assert.match(readFileSync("src/commands/dm-review.md", "utf8"), /require-ready/);
+  assert.match(readFileSync("src/commands/dm-ship.md", "utf8"), /require-ready/);
+});
+
+test("prd next step is dm-init", () => {
+  const t = readFileSync("src/commands/dm-prd.md", "utf8");
+  assert.match(t, /Next step: \/dm-init/);
+  assert.doesNotMatch(t, /Next step: \/dm-stories/);
+});
+
+test("release tags main SHA, refuses double bump, documents squash-merge", () => {
+  const t = readFileSync("src/commands/dm-release.md", "utf8");
+  assert.match(t, /git fetch origin main/);
+  assert.match(t, /git rev-parse origin\/main/);
+  assert.match(t, /git tag "v\$\{ver\}" "\$main_sha"/);
+  assert.match(t, /already in flight/);
+  assert.match(t, /squash-merge|pr merge --squash/i);
+});
+
 test("ship sets test status", () => {
   assert.match(readFileSync("src/commands/dm-ship.md", "utf8"), /status-set .*test/);
 });
