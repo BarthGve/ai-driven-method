@@ -1,5 +1,8 @@
 # ai-driven-method
 
+[![Release](https://img.shields.io/github/v/release/BarthGve/ai-driven-method?label=version)](https://github.com/BarthGve/ai-driven-method/releases)
+
+
 A fork of [killer-saas](https://github.com/MikeCodeur/killer-saas) by [Mike Codeur](https://github.com/MikeCodeur).
 
 Commands: `/dm-*`.
@@ -8,7 +11,7 @@ driven keeps the original pipeline (no direct coding, file gates, subagents)
 and adds: hybrid PRD (clone or greenfield), Grok install, GitHub board + wiki,
 `main`/`next` flow, a stricter quality bar, and semver on release.
 
-See [NOTICE](NOTICE) and [DOC.md](DOC.md).
+See [NOTICE](NOTICE), [DOC.md](DOC.md), [CHANGELOG.md](CHANGELOG.md) and [RELEASING.md](RELEASING.md).
 
 A complete agentic pipeline for product delivery: frame a hybrid PRD (clone an existing SaaS or greenfield), cut shippable user stories and child tickets, enforce quality on a GitHub board + wiki + `main`/`next` flow, and release with semver.
 One method = a suite of commands. One principle = no direct coding.
