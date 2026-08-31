@@ -65,3 +65,20 @@ test("release bumps version and wiki", () => {
   assert.match(t, /dm-version\.sh bump/);
   assert.match(t, /dm-wiki\.sh publish/);
 });
+
+test("continue is read-only on the board and writes onboarding.md", () => {
+  const t = readFileSync("src/commands/dm-continue.md", "utf8");
+  assert.match(t, /docs\/onboarding\.md/);
+  assert.doesNotMatch(t, /require-ready/);
+  assert.doesNotMatch(t, /issue-create-us|issue-create-ticket|status-set/);
+});
+
+test("continue is fail-closed on an empty repo and on an already-framed project", () => {
+  const t = readFileSync("src/commands/dm-continue.md", "utf8");
+  assert.match(t, /STOP/);
+  assert.match(t, /docs\/prd\.md/);
+});
+
+test("continue hands off to dm-prd", () => {
+  assert.match(readFileSync("src/commands/dm-continue.md", "utf8"), /Next step: \/dm-prd/);
+});
