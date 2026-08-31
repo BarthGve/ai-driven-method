@@ -96,3 +96,8 @@ test("stories adopts an issue mapped by onboarding.md, with confirmation", () =>
   assert.match(t, /issue-adopt/);
   assert.match(t, /confirm/i);
 });
+
+test("status and help route an existing project to dm-continue", () => {
+  assert.match(readFileSync("src/commands/dm-status.md", "utf8"), /\/dm-continue/);
+  assert.match(readFileSync("src/commands/dm-help.md", "utf8"), /\/dm-continue/);
+});

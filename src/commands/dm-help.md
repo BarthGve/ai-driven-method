@@ -6,6 +6,9 @@ disable-model-invocation: true
 
 Règle unique : interdit de coder en direct. Chaque feature passe par le pipeline.
 
+## Projet existant (code déjà là)
+0. /dm-continue          — baseline produit `docs/onboarding.md` + mapping des Issues déjà écrites, sans rien muter. Puis on reprend en 1.
+
 ## Une fois par projet
 1. /dm-prd <cible>       — cadre le produit : clone ou greenfield, périmètre, QUOI + POURQUOI
 2. /dm-init              — repo GitHub, branches `main`/`next`, Project, wiki, VERSION, CI
