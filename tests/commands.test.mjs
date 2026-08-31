@@ -82,3 +82,9 @@ test("continue is fail-closed on an empty repo and on an already-framed project"
 test("continue hands off to dm-prd", () => {
   assert.match(readFileSync("src/commands/dm-continue.md", "utf8"), /Next step: \/dm-prd/);
 });
+
+test("prd offers a brownfield mode fed by onboarding.md", () => {
+  const t = readFileSync("src/commands/dm-prd.md", "utf8");
+  assert.match(t, /brownfield/i);
+  assert.match(t, /docs\/onboarding\.md/);
+});
