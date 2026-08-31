@@ -6,7 +6,7 @@ const required = [
   "dm-prd", "dm-init", "dm-stories", "dm-stories-review", "dm-architect",
   "dm-design-system", "dm-research", "dm-design", "dm-plan", "dm-docs",
   "dm-execute", "dm-review", "dm-ship", "dm-release", "dm-orchestrator",
-  "dm-status", "dm-help", "dm-continue",
+  "dm-status", "dm-help", "dm-continue", "dm-feature",
 ];
 
 test("all dv commands exist", () => {
@@ -166,4 +166,9 @@ test("feature is fail-closed without a PRD or a breakdown", () => {
   assert.match(t, /STOP/);
   assert.match(t, /docs\/prd\.md/);
   assert.match(t, /docs\/stories\.md/);
+});
+
+test("status and help route a fully shipped product to dm-feature", () => {
+  assert.match(readFileSync("src/commands/dm-status.md", "utf8"), /\/dm-feature/);
+  assert.match(readFileSync("src/commands/dm-help.md", "utf8"), /\/dm-feature/);
 });

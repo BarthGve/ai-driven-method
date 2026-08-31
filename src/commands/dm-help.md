@@ -32,6 +32,9 @@ La colonne **`ready` n'existe que sur les tickets enfants**, jamais sur l'US par
 ## Release (production)
 14. /dm-release           — US parent en `test` ; bump VERSION ; PR `next` → `main` ; wiki ; `shipped`
 
+## Après la v1 (produit livré)
+15. /dm-feature <slug>   — cadre une feature, amende le PRD (section `## Amendements`), ajoute les stories au backlog. Puis pipeline normal : `/dm-architect` si la feature touche l'architecture, sinon `/dm-research <story>`.
+
 ## US vs tickets (à retenir)
 | | User story (parent) | Ticket (enfant) |
 | --- | --- | --- |
