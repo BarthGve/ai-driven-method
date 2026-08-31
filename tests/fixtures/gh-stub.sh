@@ -121,13 +121,15 @@ case "$args" in
       if (!issue) process.exit(1);
       const bf=get("--body-file");
       if (bf) issue.body=fs.readFileSync(bf,"utf8");
+      const ti=get("--title")||get("-t");
+      if (ti) issue.title=ti;
       const lab=get("--add-label")||get("-l");
       if (lab) {
         issue.labels=issue.labels||[];
         if (!issue.labels.includes(lab)) issue.labels.push(lab);
       }
       s.edits=s.edits||[];
-      s.edits.push({kind:"issue-edit", number:Number(num), labels:issue.labels||[], body:issue.body||""});
+      s.edits.push({kind:"issue-edit", number:Number(num), title:issue.title, labels:issue.labels||[], body:issue.body||""});
       fs.writeFileSync(process.env.DM_GH_STUB_STATE, JSON.stringify(s,null,2));
     ' "$@"
     echo '{"ok":true}'

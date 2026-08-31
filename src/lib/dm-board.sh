@@ -271,6 +271,24 @@ cmd_issue_create_us() {
   add_issue_to_project_backlog "$url" "$story_id"
 }
 
+# Adopt an Issue written by hand: rename to the driven convention, then board it.
+# status-set cannot do this — it resolves an existing project item, and a
+# hand-written Issue was never added to the project.
+cmd_issue_adopt() {
+  local key="${1:-}" number="${2:-}" title="${3:-}"
+  [ -n "$key" ] && [ -n "$number" ] && [ -n "$title" ] || {
+    echo "usage: issue-adopt <issue-key> <issue-number> <title>" >&2
+    return 1
+  }
+  dm_config_load
+  local repo full_title url
+  repo="$(dm_config_repo)"
+  full_title="[${key}] ${title}"
+  "$(gh_bin)" issue edit "$number" -R "$repo" --title "$full_title" >/dev/null
+  url="https://github.com/${repo}/issues/${number}"
+  add_issue_to_project_backlog "$url" "$key"
+}
+
 cmd_issue_create_ticket() {
   local story_id="${1:-}" ticket_id="${2:-}" title="${3:-}" body_file="${4:-}"
   [ -n "$story_id" ] && [ -n "$ticket_id" ] && [ -n "$title" ] && [ -n "$body_file" ] || {
@@ -317,10 +335,11 @@ main() {
     status-set) shift; cmd_status_set "$@" ;;
     issue-create-us) shift; cmd_issue_create_us "$@" ;;
     issue-create-ticket) shift; cmd_issue_create_ticket "$@" ;;
+    issue-adopt) shift; cmd_issue_adopt "$@" ;;
     require-ready) shift; cmd_require_ready "$@" ;;
     parent-sync) shift; cmd_parent_sync "$@" ;;
     *)
-      echo "usage: dm-board.sh status-get|status-set|issue-create-us|issue-create-ticket|require-ready|parent-sync ..." >&2
+      echo "usage: dm-board.sh status-get|status-set|issue-create-us|issue-create-ticket|issue-adopt|require-ready|parent-sync ..." >&2
       return 1
       ;;
   esac
