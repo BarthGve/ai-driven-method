@@ -30,4 +30,19 @@ Proceed as follows:
    ```
    Body file: short summary + acceptance criteria excerpt. Skip create if an Issue with title prefix `[<story-id>]` already exists.
 
+   **Onboarded project.** If `docs/onboarding.md` exists, read its `## Open issue mapping`
+   table before creating anything (the heading is a verbatim anchor). When a story id
+   appears in that table, the Issue is already written by hand: do **not** create a second
+   one. Ask the user, **one Issue at a time** (AskUserQuestion), whether to adopt it:
+   - adopt → one call, which renames the Issue, adds it to the project and sets `backlog`:
+     ```bash
+     bash .dm/lib/dm-board.sh issue-adopt <story-id> <N> "<title>"
+     ```
+     Never use `status-set` for this: it resolves an existing **project item**, and a
+     hand-written Issue is not on the board yet.
+   - decline → leave the Issue untouched and create the parent Issue normally.
+
+   Nothing is renamed or moved without that explicit per-Issue answer. Issues listed under
+   `## Closed issues (context)` are never touched.
+
 End with: "Stories ready in docs/stories.md (parent Issues in backlog). Next step: /dm-stories-review"
