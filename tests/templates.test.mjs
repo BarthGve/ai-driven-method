@@ -25,3 +25,10 @@ test("skills have no empty IP placeholders", () => {
     assert.doesNotMatch(readFileSync(p, "utf8"), /<< IP Mike/);
   }
 });
+
+test("prd template carries an amendment history for post-v1 features", () => {
+  const t = readFileSync("src/templates/prd.md", "utf8");
+  assert.match(t, /## Amendements/);
+  assert.match(t, /cimeti[eè]re/i);
+  assert.match(t, /Stories :/);
+});
