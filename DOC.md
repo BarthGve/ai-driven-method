@@ -67,6 +67,7 @@ Then story framing (docs on `feature/<story-id>`), then ticket delivery
 
 | Step | Command | Role | Output |
 | --- | --- | --- | --- |
+| Continue | `/dm-continue` | Existing project: product baseline + Issue mapping, mutates nothing | `docs/onboarding.md` |
 | PRD | `/dm-prd` | Hybrid frame: clone **or** greenfield — the WHAT and the WHY | `docs/prd.md` |
 | Init | `/dm-init` | Remote, `main`/`next`, Project board, wiki, `VERSION`, CI | `.dm/config.json`, `VERSION`, protections |
 | Stories | `/dm-stories` | Shippable US + **one parent Issue** per US (`backlog`) | `docs/stories.md` |
@@ -83,6 +84,13 @@ Then story framing (docs on `feature/<story-id>`), then ticket delivery
 | Release | `/dm-release` | Bump `VERSION`, PR `next`→`main`, wiki, `shipped` | tag + wiki + board |
 
 ### Framing (once per product)
+
+**/dm-continue** — the brownfield entry point. Read-only on the repo and on GitHub: it
+writes `docs/onboarding.md` (what the app does, the shipped baseline, a proposed
+`issue #N → sNN-slug` mapping) and nothing else. It cannot touch the board — `.dm/config.json`
+does not exist before `/dm-init`. The mapping is applied later by `/dm-stories`, one
+confirmation per Issue, through `dm-board.sh issue-adopt`. Fail-closed both ways: empty
+repo → `/dm-prd`; `docs/prd.md` already present → `/dm-status`.
 
 **/dm-prd** — frames the product by interviewing the user. First question: **clone** an existing SaaS vs **greenfield**. Clone mode covers target, kill mode (internal replacement vs competing product), why, the 20% perimeter, complexity scores, graveyard, and angle beyond parity. Greenfield covers need, users, why now, in/out of scope (graveyard still kills creep), constraints, and success — no fake “target SaaS”. Nothing is filled without validation. The WHAT and the WHY, never the HOW.
 
