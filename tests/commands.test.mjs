@@ -6,7 +6,7 @@ const required = [
   "dm-prd", "dm-init", "dm-stories", "dm-stories-review", "dm-architect",
   "dm-design-system", "dm-research", "dm-design", "dm-plan", "dm-docs",
   "dm-execute", "dm-review", "dm-ship", "dm-release", "dm-orchestrator",
-  "dm-status", "dm-help",
+  "dm-status", "dm-help", "dm-continue",
 ];
 
 test("all dv commands exist", () => {
