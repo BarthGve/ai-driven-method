@@ -375,3 +375,14 @@ test("dm-wiki keeps the token out of argv and of .git/config", () => {
   assert.match(t, /credential\.helper=" \\/);
   assert.match(t, /--replace-all credential\.helper ""/);
 });
+
+test("issue-adopt renames a hand-written issue and puts it on the board", () => {
+  const { d, statePath, bin } = appDir([
+    { title: "Export CSV", number: 7, id: "I_7", projectItems: [] },
+  ]);
+  runBoard(d, bin, statePath, ["issue-adopt", "s03-export-csv", "7", "Export CSV"]);
+  const s = JSON.parse(readFileSync(statePath, "utf8"));
+  const issue = s.issues.find((i) => i.number === 7);
+  assert.equal(issue.title, "[s03-export-csv] Export CSV");
+  assert.equal(s.item_add_calls, 1);
+});
