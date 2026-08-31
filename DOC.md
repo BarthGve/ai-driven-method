@@ -82,6 +82,7 @@ Then story framing (docs on `feature/<story-id>`), then ticket delivery
 | Review | `/dm-review <story> <ticket>` | Quality-bar review by `reviewer` | `docs/reviews/<story>/<ticket>.md` |
 | Ship | `/dm-ship <story> <ticket>` | PR into **`next`**; after merge child → `test` | PR / board update |
 | Release | `/dm-release` | Bump `VERSION`, PR `next`→`main`, wiki, `shipped` | tag + wiki + board |
+| Feature | `/dm-feature <slug>` | Post-v1: frame, amend the PRD, append stories | `docs/prd.md` + `docs/stories.md` |
 
 ### Framing (once per product)
 
@@ -127,6 +128,20 @@ mockup are.
 ### Production
 
 **/dm-release** — parents in `test`; user picks major/minor/patch; bump `VERSION`; PR `next` → `main`; after merge: tag, `dm-wiki.sh publish`, board → `shipped`.
+
+**/dm-feature** — a feature on a product that already ships. The PRD is a living
+document: the perimeter table is updated in place and the change is recorded under
+`## Amendements` (date, target version, what enters the perimeter, and — when the
+feature comes out of the graveyard — the justification for the reversal). Stories
+are **appended** to `docs/stories.md`, ids continuing the existing sequence; the
+file is never overwritten, since the ids already there are referenced by research,
+plans, reviews and live branches. Architecture impact is decided by an
+enumeration, not by feel: a new runtime dependency, an external service or
+provider, a new persistence store or migration, a new auth surface, or an async
+mechanism sends the feature through `/dm-architect` and a new ADR before
+`/dm-plan`. The fresh-context review lands in `docs/reviews/features/<id>.md` and
+leaves `docs/reviews/stories.md` alone — that file carries the product-level
+`Stories ready:` signal.
 
 ### Utilities
 

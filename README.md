@@ -49,6 +49,13 @@ Story branches are docs only. `ready` is **child-only**.
 
 One worktree, one branch, one commit, one PR per ticket. Child must be `ready`.
 
+### After v1
+
+`/dm-feature <slug>` — the product ships and a new feature arrives. It frames the
+feature, amends the PRD (living document: the perimeter is updated and the change
+recorded under `## Amendements`), and appends stories to the existing backlog. A
+mechanical impact list decides whether it goes through `/dm-architect` first.
+
 ### Production
 
 `/dm-release` — parents in `test`, bump `VERSION`, squash-merge `next` → `main`, tag, wiki, board `shipped`.
@@ -172,6 +179,9 @@ What it does — and doesn't:
     /dm-ship <story> <ticket>
     # production:
     /dm-release
+
+    # after v1, a new feature:
+    /dm-feature <slug>
 
     # or run with human checkpoints:
     /dm-orchestrator <story>            # research → design → plan → docs
