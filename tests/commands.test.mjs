@@ -128,3 +128,11 @@ test("orchestrator routes a project that predates driven to dm-continue", () => 
   assert.match(t, /\/dm-continue/);
   assert.match(t, /\/dm-prd/);
 });
+
+test("stories-review judges a feature against the shipped product", () => {
+  const t = readFileSync("src/skills/stories-review/SKILL.md", "utf8");
+  assert.match(t, /shipped/i);
+  assert.match(t, /duplicat/i);
+  // the closing contract lives in the agent, not the skill — it must not move
+  assert.match(readFileSync("src/agents/stories-reviewer.md", "utf8"), /Stories ready/);
+});
