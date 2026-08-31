@@ -25,6 +25,6 @@ Derive the state from the files and the board — never guess. Bash is for read-
 4. Start with one-line summary: X shipped / Y in test / Z in progress / W backlog. Compact tables: US row, then indented ticket rows. Next command is the most useful one (often "move t02 to ready" or `/dm-execute s01 t01` or `/dm-release`).
 5. Decisions: if docs/decisions/ exists, mention ADR count and the latest one.
 
-If docs/ doesn't exist at all, the project hasn't started: point to /dm-prd.
+If docs/ doesn't exist at all, the project hasn't started. Two cases: source files exist outside `docs/` **and** the git history holds more than one commit → the project predates driven, point to /dm-continue. Otherwise the repo is empty: point to /dm-prd.
 
 End with the single most useful next command, e.g.: "Next: /dm-docs s02-…" or "Next: move s01/t02 to ready, then /dm-execute s01 t02".
