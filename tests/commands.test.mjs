@@ -136,3 +136,34 @@ test("stories-review judges a feature against the shipped product", () => {
   // the closing contract lives in the agent, not the skill — it must not move
   assert.match(readFileSync("src/agents/stories-reviewer.md", "utf8"), /Stories ready/);
 });
+
+test("feature amends the PRD and appends stories without rewriting them", () => {
+  const t = readFileSync("src/commands/dm-feature.md", "utf8");
+  assert.match(t, /## Amendements/);
+  assert.match(t, /append/i);
+  assert.doesNotMatch(t, /rewrite docs\/stories\.md/i);
+  assert.match(t, /issue-create-us/);
+});
+
+test("feature gates architecture on an explicit enumeration", () => {
+  const t = readFileSync("src/commands/dm-feature.md", "utf8");
+  for (const trigger of [/runtime dependency/i, /provider/i, /migration/i, /authorization/i, /queue/i]) {
+    assert.match(t, trigger);
+  }
+  assert.match(t, /\/dm-architect/);
+  assert.match(t, /\/dm-research/);
+});
+
+test("feature review does not clobber the framing review signal", () => {
+  const t = readFileSync("src/commands/dm-feature.md", "utf8");
+  assert.match(t, /docs\/reviews\/features\//);
+  assert.match(t, /stories-reviewer/);
+  assert.doesNotMatch(t, /write .*docs\/reviews\/stories\.md/i);
+});
+
+test("feature is fail-closed without a PRD or a breakdown", () => {
+  const t = readFileSync("src/commands/dm-feature.md", "utf8");
+  assert.match(t, /STOP/);
+  assert.match(t, /docs\/prd\.md/);
+  assert.match(t, /docs\/stories\.md/);
+});
