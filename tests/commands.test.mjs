@@ -122,3 +122,9 @@ test("doc records that the native design canvas is Claude-only", () => {
   assert.match(t, /\/design/);
   assert.match(t, /canvas/i);
 });
+
+test("orchestrator routes a project that predates driven to dm-continue", () => {
+  const t = readFileSync("src/commands/dm-orchestrator.md", "utf8");
+  assert.match(t, /\/dm-continue/);
+  assert.match(t, /\/dm-prd/);
+});

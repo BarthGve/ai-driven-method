@@ -23,7 +23,7 @@ Resolve the first argument to `<story-id>` against docs/stories.md. If a second 
 ## Mode A — `/dm-orchestrator <story>` (framing)
 
 ### Phase 0 — Prerequisites (fail-closed)
-1. docs/prd.md exists? Missing → STOP: run /dm-prd.
+1. docs/prd.md exists? Missing → STOP, and point to the right entry command. Same predicate as /dm-status: source files outside `docs/` **and** a git history of more than one commit means the project predates driven → "run /dm-continue first (existing project), then /dm-prd". Otherwise the repo is empty → "run /dm-prd".
 2. docs/stories.md exists? Missing → STOP: run /dm-stories.
 3. docs/architecture.md exists? Missing → STOP: run /dm-architect.
 4. docs/reviews/stories.md says `Stories ready: yes`? Warn if missing/negative (don't hard-stop).
