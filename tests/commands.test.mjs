@@ -88,3 +88,11 @@ test("prd offers a brownfield mode fed by onboarding.md", () => {
   assert.match(t, /brownfield/i);
   assert.match(t, /docs\/onboarding\.md/);
 });
+
+test("stories adopts an issue mapped by onboarding.md, with confirmation", () => {
+  const t = readFileSync("src/commands/dm-stories.md", "utf8");
+  assert.match(t, /docs\/onboarding\.md/);
+  assert.match(t, /issue-create-us/);
+  assert.match(t, /issue-adopt/);
+  assert.match(t, /confirm/i);
+});
