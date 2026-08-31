@@ -31,9 +31,17 @@ cmd_publish() {
   if command -v gh >/dev/null; then
     gh auth setup-git >/dev/null 2>&1 || true
   fi
+  # The token never goes into the URL: it would show up in `ps` while git runs, and
+  # `git remote add` would persist it in .git/config. Feed it through a credential
+  # helper that reads it from the environment instead.
   local clone_url="$wiki_url"
+  local -a git_auth=()
   if [ -n "$token" ]; then
-    clone_url="https://x-access-token:${token}@github.com/${owner}/${repo}.wiki.git"
+    export DM_WIKI_TOKEN="$token"
+    # An empty value first RESETS the helper list: `-c credential.helper=X` only
+    # appends, so without this an ambient helper (keychain, gh) would answer first.
+    git_auth=(-c "credential.helper=" \
+              -c "credential.helper=!f(){ echo username=x-access-token; echo \"password=\$DM_WIKI_TOKEN\"; }; f")
   fi
   local tmp
   tmp="$(mktemp -d "${TMPDIR:-/tmp}/dm-wiki.XXXXXX")"
@@ -41,12 +49,17 @@ cmd_publish() {
   trap cleanup EXIT
 
   # Clone or init wiki (authenticated via gh token / GH_TOKEN / gh auth setup-git)
-  if ! git clone --depth 1 "$clone_url" "$tmp/wiki" 2>/dev/null; then
+  if ! git ${git_auth[@]+"${git_auth[@]}"} clone --depth 1 "$clone_url" "$tmp/wiki" 2>/dev/null; then
     mkdir -p "$tmp/wiki"
     (
       cd "$tmp/wiki"
       git init -b master
       git remote add origin "$clone_url"
+      if [ -n "${DM_WIKI_TOKEN:-}" ]; then
+        git config --replace-all credential.helper ""
+        git config --add credential.helper \
+          '!f(){ echo username=x-access-token; echo "password=$DM_WIKI_TOKEN"; }; f'
+      fi
       printf '# %s\n' "$repo" >Home.md
       git add Home.md
       git -c user.email="${GIT_AUTHOR_EMAIL:-dm-wiki@localhost}" \
@@ -91,7 +104,8 @@ cmd_publish() {
     git -c user.email="${GIT_AUTHOR_EMAIL:-dm-wiki@localhost}" \
         -c user.name="${GIT_AUTHOR_NAME:-dm-wiki}" \
         commit -m "docs: publish product wiki for v${version}"
-    git push -u origin HEAD:master 2>/dev/null || git push -u origin HEAD:main
+    git ${git_auth[@]+"${git_auth[@]}"} push -u origin HEAD:master 2>/dev/null \
+      || git ${git_auth[@]+"${git_auth[@]}"} push -u origin HEAD:main
   )
   echo "dm-wiki: published v${version} (${#shipped[@]} stories)"
 }
