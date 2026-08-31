@@ -14,8 +14,14 @@ set -euo pipefail
 #   ./install.sh --global --target all      Global Claude + Codex + Grok
 #   ./install.sh init [--target …]     Pose templates + rules dans le projet (après un global)
 #   ./install.sh update [--target …]   Met à jour le tooling + templates (préserve tes modifs)
+#   ./install.sh uninstall [--target …]  Retire ce que l'install a posé (manifeste), rien d'autre
+#   --profile full|framing|delivery    Sous-ensemble de commandes (défaut : full)
+#   --dry-run                          Avec uninstall : liste sans supprimer
 #   --hooks                            Pose les git hooks d'enforcement (opt-in, réversible)
 #   --force                            Écrase aussi les templates modifiés localement
+#
+# Sans argument sur un terminal, l'installeur demande cible et profil. Avec des
+# flags, ou hors terminal (CI, curl | bash redirigé), il ne demande rien.
 #
 # Deux portées, pour chaque cible : projet (dans le repo courant) ou global (--global).
 #
@@ -41,17 +47,65 @@ CACHE="$HOME/.claude/ai-driven-method"
 ORIG="./.driven/templates.orig"   # baseline templates (tool-neutral), for local-edit detection
 
 # --- Arguments : mode + --target + --hooks + --force ---
-FORCE=0; HOOKS=0; TARGET="claude"; MODE=""
+FORCE=0; HOOKS=0; TARGET="claude"; MODE=""; PROFILE="full"; DRY_RUN=0; EXPLICIT=0
 while [ $# -gt 0 ]; do
   case "$1" in
     -f|--force)   FORCE=1 ;;
     --hooks)      HOOKS=1 ;;
-    --target)     TARGET="${2:-}"; shift ;;
-    --target=*)   TARGET="${1#--target=}" ;;
+    --dry-run)    DRY_RUN=1 ;;
+    --yes|-y)     EXPLICIT=1 ;;
+    --target)     TARGET="${2:-}"; EXPLICIT=1; shift ;;
+    --target=*)   TARGET="${1#--target=}"; EXPLICIT=1 ;;
+    --profile)    PROFILE="${2:-}"; EXPLICIT=1; shift ;;
+    --profile=*)  PROFILE="${1#--profile=}"; EXPLICIT=1 ;;
     *)            MODE="$1" ;;
   esac
   shift
 done
+
+# --- Profils : table plate lue sans parser (le chemin Claude reste sans Node) ---
+PROFILE_CMDS="*"
+load_profile() {
+  local want="$1" line
+  [ -f "$SRC/profiles.txt" ] || { PROFILE_CMDS="*"; return 0; }
+  while IFS= read -r line; do
+    case "$line" in
+      \#*|"") continue ;;
+      "$want":*) PROFILE_CMDS="${line#*:}"; return 0 ;;
+    esac
+  done < "$SRC/profiles.txt"
+  echo "Profil inconnu : $want" >&2
+  echo "Disponibles : $(grep -v '^#' "$SRC/profiles.txt" | grep -v '^$' | cut -d: -f1 | tr '\n' ' ')" >&2
+  exit 1
+}
+load_profile "$PROFILE"
+
+# Vrai si la commande <basename sans .md> fait partie du profil courant.
+in_profile() {
+  [ "$PROFILE_CMDS" = "*" ] && return 0
+  case " $PROFILE_CMDS " in *" $1 "*) return 0 ;; esac
+  return 1
+}
+
+# --- Interactif : seulement sur un terminal, et seulement sans flags explicites.
+# stdin porte le script sous `curl | bash`, donc on lit sur /dev/tty, jamais sur stdin.
+ask() {
+  local prompt="$1" default="$2" answer=""
+  printf '%s [%s] ' "$prompt" "$default" > /dev/tty
+  IFS= read -r answer < /dev/tty || answer=""
+  printf '%s' "${answer:-$default}"
+}
+maybe_interactive() {
+  [ "$EXPLICIT" = 1 ] && return 0          # l'utilisateur a déjà choisi
+  [ -t 1 ] || return 0                      # pas un terminal : CI, pipe, curl redirigé
+  [ -r /dev/tty ] || return 0
+  case "$MODE" in uninstall) return 0 ;; esac
+  echo "→ driven install — Entrée pour accepter le défaut."
+  TARGET="$(ask "Cible ? claude / codex / grok / all" "$TARGET")"
+  PROFILE="$(ask "Profil ? full / framing / delivery" "$PROFILE")"
+  load_profile "$PROFILE"
+}
+maybe_interactive
 
 # Supprime les fichiers posés par une install précédente (listés dans .dm-manifest) — jamais rien d'autre.
 clean_tooling() {
@@ -64,16 +118,31 @@ clean_tooling() {
   done < "$dest/.dm-manifest"
 }
 
+# Copie les commandes retenues par le profil. Skills et agents ne sont jamais filtrés :
+# les commandes les référencent par nom, une skill absente casse la commande qui la précharge.
+copy_commands_in_profile() {
+  local from="$1" to="$2" f
+  mkdir -p "$to"
+  for f in "$from/"*.md; do
+    [ -e "$f" ] || continue
+    in_profile "$(basename "$f" .md)" || continue
+    cp "$f" "$to/"
+  done
+}
+
 # Claude : copie verbatim (pas de build, pas de Node — chemin quotidien).
 copy_tooling_claude() {
   local dest="$1" f
   clean_tooling "$dest"
   mkdir -p "$dest/commands" "$dest/skills" "$dest/agents"
-  cp -R "$SRC/commands/." "$dest/commands/"
+  copy_commands_in_profile "$SRC/commands" "$dest/commands"
   cp -R "$SRC/skills/."   "$dest/skills/"
   cp -R "$SRC/agents/."   "$dest/agents/"
   : > "$dest/.dm-manifest"
-  for f in "$SRC/commands/"*.md; do echo "commands/$(basename "$f")" >> "$dest/.dm-manifest"; done
+  for f in "$SRC/commands/"*.md; do
+    in_profile "$(basename "$f" .md)" || continue
+    echo "commands/$(basename "$f")" >> "$dest/.dm-manifest"
+  done
   for f in "$SRC/skills/"*/;     do echo "skills/$(basename "$f")"   >> "$dest/.dm-manifest"; done
   for f in "$SRC/agents/"*.md;   do echo "agents/$(basename "$f")"   >> "$dest/.dm-manifest"; done
   echo "$VERSION" > "$dest/.dm-version"
@@ -88,6 +157,11 @@ copy_tooling_codex() {
   clean_tooling "$dest"
   mkdir -p "$dest"
   cp -R "$stg/." "$dest/"
+  # Les commandes deviennent des skills dm-* : on retire celles hors profil après build.
+  for d in "$dest/skills/"dm-*/; do
+    [ -e "$d" ] || continue
+    in_profile "$(basename "$d")" || rm -rf "$d"
+  done
   : > "$dest/.dm-manifest"
   for d in "$dest/skills/"*/; do echo "skills/$(basename "$d")" >> "$dest/.dm-manifest"; done
   echo "$VERSION" > "$dest/.dm-version"
@@ -102,7 +176,7 @@ copy_tooling_grok() {
   node "$PAYLOAD_ROOT/bin/dm-build.mjs" --target grok --src "$SRC" --out "$stg" >/dev/null
   clean_tooling "$dest"
   mkdir -p "$dest/commands" "$dest/skills" "$dest/agents"
-  cp -R "$stg/commands/." "$dest/commands/"
+  copy_commands_in_profile "$stg/commands" "$dest/commands"
   cp -R "$stg/skills/."   "$dest/skills/"
   cp -R "$stg/agents/."   "$dest/agents/"
   : > "$dest/.dm-manifest"
@@ -175,6 +249,43 @@ install_hooks() {
   echo "   Désactiver : git config --unset core.hooksPath"
 }
 
+# Désinstalle : retire exactement ce que le manifeste liste, jamais autre chose.
+# Les fichiers que l'utilisateur a écrits lui-même n'y sont pas, donc ils survivent.
+uninstall_one() {
+  local dest="$1" line
+  if [ ! -f "$dest/.dm-manifest" ]; then
+    echo "→ Rien à retirer dans $dest (pas de .dm-manifest)."
+    return 0
+  fi
+  while IFS= read -r line; do
+    case "$line" in
+      commands/*|skills/*|agents/*|prompts/*) ;;
+      *) continue ;;
+    esac
+    [ -e "$dest/$line" ] || continue
+    if [ "$DRY_RUN" = 1 ]; then
+      echo "   [dry-run] $dest/$line"
+    else
+      rm -rf "$dest/$line"
+      echo "   retiré $dest/$line"
+    fi
+  done < "$dest/.dm-manifest"
+  if [ "$DRY_RUN" = 0 ]; then
+    rm -f "$dest/.dm-manifest" "$dest/.dm-version"
+    rmdir "$dest/commands" "$dest/skills" "$dest/agents" 2>/dev/null || true
+  fi
+}
+
+uninstall_target() {
+  case "$1" in
+    claude) uninstall_one "./.claude" ;;
+    codex)  uninstall_one "./.codex" ;;
+    grok)   uninstall_one "./.grok" ;;
+    all)    uninstall_one "./.claude"; uninstall_one "./.codex"; uninstall_one "./.grok" ;;
+    *)      echo "Cible inconnue : $1 (claude|codex|grok|all)" >&2; exit 1 ;;
+  esac
+}
+
 install_target() {
   case "$1" in
     claude)
@@ -241,6 +352,15 @@ case "$MODE" in
     if [ "$HOOKS" = 1 ]; then install_hooks; fi
     ;;
 
+  uninstall)
+    if [ "$DRY_RUN" = 1 ]; then echo "→ driven uninstall — dry-run, rien ne sera supprimé."; fi
+    uninstall_target "$TARGET"
+    if [ "$DRY_RUN" = 0 ]; then
+      echo "✅ driven retiré ($TARGET). Templates, docs/, .dm/ et AGENTS.md sont laissés en place — à toi de voir."
+      echo "   Hooks git : git config --unset core.hooksPath"
+    fi
+    ;;
+
   update)
     install_target "$TARGET"
     echo "✅ driven mis à jour ($TARGET, version $VERSION). AGENTS.md jamais touché — fusionne à la main si les rules ont évolué."
@@ -249,7 +369,7 @@ case "$MODE" in
 
   *)
     echo "Option inconnue : $MODE" >&2
-    echo "Usage : ./install.sh [--target claude|codex|grok|all] [--hooks] [--global | init | update] [--force]" >&2
+    echo "Usage : ./install.sh [--target claude|codex|grok|all] [--profile full|framing|delivery] [--hooks] [--global | init | update | uninstall] [--force] [--dry-run] [--yes]" >&2
     exit 1
     ;;
 esac

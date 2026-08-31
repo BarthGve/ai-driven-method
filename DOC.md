@@ -230,6 +230,8 @@ The installer always targets the directory you run it from — your project's ro
 | Per project, after global | `~/.claude/ai-driven-method/install.sh init [--target …]` | Templates + rules + `.dm/lib` |
 | Update | one-liner with `-s -- update` | Replaces method tooling; never overwrites `AGENTS.md` |
 | Hooks | add `--hooks` | `core.hooksPath=.dm-hooks` |
+| Profile | `--profile full\|framing\|delivery` | Installs a coherent subset of the commands |
+| Uninstall | `uninstall [--dry-run]` | Removes exactly what `.dm-manifest` lists |
 
 ## Multi-tool support (Claude Code / Codex / Grok)
 
