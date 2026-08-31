@@ -37,3 +37,11 @@ Technical, time, dependencies.
 
 ## Success criteria
 <clone: parity checklist on the perimeter + the angle; greenfield: measurable outcomes on in-scope features + the angle.>
+
+## Amendements
+<Une entrée par feature ajoutée après la v1, la plus récente en haut. Le corps du PRD ci-dessus décrit le produit tel qu'il est aujourd'hui ; cette section dit comment il y est arrivé.>
+
+### <AAAA-MM-JJ> — v<version cible> — <slug>
+**Entre dans le périmètre :** <ce que la feature ajoute, en une ou deux lignes>
+**Sorti du cimetière ?** <non | oui — justification du revirement : ce qui a changé depuis la décision d'exclure>
+**Stories :** <s07-…, s08-…>
