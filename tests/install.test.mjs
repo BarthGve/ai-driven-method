@@ -91,3 +91,11 @@ test("non-interactive stdin never prompts", () => {
   assert.match(out, /driven install/i);
   assert.ok(existsSync(join(d, ".claude/commands/dm-prd.md")));
 });
+
+test("the installer stamps a semver, not a git sha", () => {
+  const d = project();
+  run(d, ["--target", "claude"]);
+  const stamped = readFileSync(join(d, ".claude/.dm-version"), "utf8").trim();
+  assert.match(stamped, /^\d+\.\d+\.\d+$/, `expected semver, got ${stamped}`);
+  assert.equal(stamped, readFileSync(join(ROOT, "VERSION"), "utf8").trim());
+});

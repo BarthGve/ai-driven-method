@@ -48,3 +48,9 @@ test("bump syncs package.json and CHANGELOG when present", () => {
   const log = readFileSync(join(d, "CHANGELOG.md"), "utf8");
   assert.match(log, /^## 0\.1\.1 - \d{4}-\d{2}-\d{2}/m);
 });
+
+test("driven itself carries a VERSION and a matching changelog entry", () => {
+  const v = readFileSync(join(ROOT, "VERSION"), "utf8").trim();
+  assert.match(v, /^\d+\.\d+\.\d+$/);
+  assert.match(readFileSync(join(ROOT, "CHANGELOG.md"), "utf8"), new RegExp(v.replace(/\./g, "\\.")));
+});

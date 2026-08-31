@@ -42,7 +42,13 @@ else
   PAYLOAD_ROOT="$TMP"
 fi
 
-VERSION="$(git -C "$PAYLOAD_ROOT" rev-parse --short HEAD 2>/dev/null || date +%Y-%m-%d)"
+# Version sémantique du payload. Le SHA ne reste qu'en secours : il ne dit à personne
+# s'il est en retard, et un rapport de bug qui cite « 8836bc0 » ne situe rien.
+if [ -f "$PAYLOAD_ROOT/VERSION" ]; then
+  VERSION="$(tr -d '[:space:]' < "$PAYLOAD_ROOT/VERSION")"
+else
+  VERSION="$(git -C "$PAYLOAD_ROOT" rev-parse --short HEAD 2>/dev/null || date +%Y-%m-%d)"
+fi
 CACHE="$HOME/.claude/ai-driven-method"
 ORIG="./.driven/templates.orig"   # baseline templates (tool-neutral), for local-edit detection
 
