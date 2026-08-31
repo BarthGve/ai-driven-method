@@ -15,17 +15,22 @@ jobs:
 
       - name: Refuse PRs into main that are not from next
         if: github.base_ref == 'main' && github.head_ref != 'next'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          echo "dm-gate: PRs into main must come from next (got head '${{ github.head_ref }}')"
+          echo "dm-gate: PRs into main must come from next (got head '$HEAD_REF')"
           exit 1
 
       - name: Feature PR into next — ticket ship gate or framing docs-only
         if: github.base_ref == 'next' && startsWith(github.head_ref, 'feature/')
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
-          ref="${{ github.head_ref }}"
+          ref="$HEAD_REF"
           rest="${ref#feature/}"
-          base_sha="${{ github.event.pull_request.base.sha }}"
+          base_sha="$BASE_SHA"
           changed="$(git diff --name-only "${base_sha}...HEAD" || true)"
           case "$rest" in
             */*)
@@ -63,10 +68,12 @@ jobs:
 
       - name: Release PR next → main — VERSION bumped + changelog
         if: github.base_ref == 'main' && github.head_ref == 'next'
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           set -euo pipefail
-          git fetch origin "${{ github.base_ref }}" --depth=1
-          base_ver="$(git show "origin/${{ github.base_ref }}:VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
+          git fetch origin "$BASE_REF" --depth=1
+          base_ver="$(git show "origin/${BASE_REF}:VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
           head_ver="$(tr -d '[:space:]' < VERSION 2>/dev/null || true)"
           if [ -z "$head_ver" ]; then
             echo "dm-gate: VERSION missing on next"

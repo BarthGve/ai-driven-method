@@ -362,3 +362,16 @@ test("dm-wiki clones with gh credentials", () => {
   assert.match(t, /gh auth setup-git/);
   assert.match(t, /x-access-token/);
 });
+
+test("dm-wiki keeps the token out of argv and of .git/config", () => {
+  // A token embedded in the clone URL is visible in `ps` to any local user, and
+  // `git remote add` writes it to disk. Pass it through a credential helper env var.
+  const t = readFileSync(join(ROOT, "src/lib/dm-wiki.sh"), "utf8");
+  assert.doesNotMatch(t, /https:\/\/x-access-token:\$\{?token/);
+  assert.match(t, /credential\.helper/);
+  assert.match(t, /DM_WIKI_TOKEN/);
+  // `-c credential.helper=X` appends to the helper list; an empty value first is
+  // what resets it, so an ambient helper (keychain, gh) cannot answer instead.
+  assert.match(t, /credential\.helper=" \\/);
+  assert.match(t, /--replace-all credential\.helper ""/);
+});

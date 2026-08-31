@@ -251,6 +251,34 @@ test("dm-gate.yml refuses non-next PRs into main and gates ticket/framing/releas
   assert.match(t, /CHANGELOG\.md/);
 });
 
+test("dm-gate.yml never interpolates ${{ }} inside a run: block", () => {
+  // GitHub substitutes ${{ }} into the script text before bash parses it, so an
+  // attacker-controlled branch name like `feature/x$(id)` would execute. Values must
+  // reach the shell as env data instead.
+  const lines = readFileSync(join(ROOT, "src/workflows/dm-gate.yml"), "utf8").split("\n");
+  const offenders = [];
+  let inRun = false;
+  let runIndent = 0;
+  for (const [i, line] of lines.entries()) {
+    if (line.trim() === "") continue;
+    const indent = line.length - line.trimStart().length;
+    if (inRun && indent <= runIndent) inRun = false;
+    if (inRun && line.includes("${{")) offenders.push(`${i + 1}: ${line.trim()}`);
+    if (/^\s*run:\s*\|/.test(line)) {
+      inRun = true;
+      runIndent = indent;
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+
+test("dm-gate.yml passes refs to the shell as env vars", () => {
+  const t = readFileSync(join(ROOT, "src/workflows/dm-gate.yml"), "utf8");
+  assert.match(t, /HEAD_REF: \$\{\{ github\.head_ref \}\}/);
+  assert.match(t, /BASE_REF: \$\{\{ github\.base_ref \}\}/);
+  assert.match(t, /BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \}\}/);
+});
+
 test("ready-ok passes when .dm/config.json is missing", () => {
   const d = repo();
   assert.equal(runGate(d, ["ready-ok", "s01-x/t01-y"]), "");
