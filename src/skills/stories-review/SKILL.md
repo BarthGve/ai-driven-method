@@ -19,6 +19,29 @@ Why it runs here: a defect in `docs/stories.md` costs a markdown edit now, and c
 7. **Ids** — `s<number>-<slug>`, unique, short, stable. They name every pipeline file and the story branch, so a malformed or duplicated id breaks the whole cycle.
 8. **Overlap** — two stories claiming the same slice, or one story bundling two unrelated values.
 
+## Reviewing a feature added after v1
+
+When the input is a single feature added to a product already in production
+(`/dm-feature`), the eight checks above still apply, and three more are decisive.
+The breakdown is no longer judged only against the PRD: it is judged against what
+already runs.
+
+9. **Duplication of shipped work** — the feature re-delivers a slice a `shipped`
+   story already covers. The eight checks only compare stories to each other, so
+   this is invisible to them. Read the board status of every existing story before
+   judging. **critical** — the work is already paid for.
+10. **Dependency on unshipped work** — the feature assumes a story that is not yet
+    `shipped`. It is not automatically wrong, but it must be stated: the feature
+    cannot ship before its dependency. Unstated → **major**.
+11. **Contradiction with production behaviour** — the feature changes a behaviour
+    users already rely on without saying so. A deliberate change is legitimate; a
+    silent one is a regression waiting to be shipped. **critical** when the
+    acceptance criteria contradict a shipped story's criteria without naming it.
+
+Graveyard rule, adjusted: a feature **may** come out of the graveyard, but only
+with the justification recorded in the PRD's `## Amendements` section. Coming out
+of the graveyard with no recorded justification stays **critical**.
+
 ## Severity scale
 
 - **critical** — the product would be incomplete or out of scope: an uncovered perimeter feature, a graveyard leak, an impossible dependency order.
