@@ -25,6 +25,12 @@ PRD → Init (board / wiki / `VERSION`) → User Stories → Stories Review → 
 
 Full method documentation: [DOC.md](DOC.md)
 
+### Existing project
+
+`/dm-continue` — the code already runs and the Issues are already written. It records a
+product baseline in `docs/onboarding.md` and proposes a mapping for the open Issues,
+mutating nothing. Then the normal framing resumes at `/dm-prd` (brownfield mode).
+
 ### Framing — once per product
 
 `/dm-prd` → `/dm-init` → `/dm-stories` → `/dm-stories-review` → `/dm-architect` → `/dm-design-system`
@@ -146,6 +152,9 @@ What it does — and doesn't:
 
 ## Usage
 
+    # existing project (code already there):
+    /dm-continue
+    # then:
     /dm-prd
     /dm-init
     /dm-stories
