@@ -101,3 +101,24 @@ test("status and help route an existing project to dm-continue", () => {
   assert.match(readFileSync("src/commands/dm-status.md", "utf8"), /\/dm-continue/);
   assert.match(readFileSync("src/commands/dm-help.md", "utf8"), /\/dm-continue/);
 });
+
+test("design offers the native /design canvas path and keeps the file gate", () => {
+  const t = readFileSync("src/commands/dm-design.md", "utf8");
+  // Claude Code ships /design; on Claude the canvas is drafted in session instead
+  // of the manual brief round-trip.
+  assert.match(t, /\/design\b/);
+  assert.match(t, /\.dc\.html/);
+  // The published Artifact is never the deliverable: the pipeline gate reads files.
+  assert.match(t, /docs\/designs\/<id>\.md/);
+  assert.match(t, /Artifact/);
+  // Tokens are injected, never guessed, on every path.
+  assert.match(t, /docs\/design-system\.md/);
+  // Codex and Grok have no /design: they keep the brief.
+  assert.match(t, /Codex|Grok/);
+});
+
+test("doc records that the native design canvas is Claude-only", () => {
+  const t = readFileSync("DOC.md", "utf8");
+  assert.match(t, /\/design/);
+  assert.match(t, /canvas/i);
+});
