@@ -139,6 +139,30 @@ The method's guardrails don't have to depend on a specific tool's permissions. O
 
 Reversible: `git config --unset core.hooksPath`. On Claude the harness also enforces "no direct coding" via tool permissions; the hooks make the same guarantees hold on Codex and Grok — enforcement lives in the repo, not the tool.
 
+### Profiles and prompts
+
+Run `./install.sh` with no flags **on a terminal** and it asks for the target and the
+profile. Pass any flag, or run it outside a terminal (CI, `curl | bash` redirected),
+and it asks nothing — same behaviour as before.
+
+    ./install.sh --profile framing     # PRD → design system: frame without delivering
+    ./install.sh --profile delivery    # research → release: deliver, framing done elsewhere
+    ./install.sh --profile full        # everything (default)
+
+Profiles pick **commands**, never skills or agents: commands reference those by name,
+and a missing skill breaks the command that preloads it. The table lives in
+`src/profiles.txt`.
+
+## Uninstall
+
+    ./install.sh uninstall [--target claude|codex|grok|all]
+    ./install.sh uninstall --dry-run    # list what would go, delete nothing
+
+It removes exactly what `.dm-manifest` lists — the files the install put there. Commands
+and skills you wrote yourself are not in the manifest, so they survive. Templates,
+`docs/`, `.dm/` and `AGENTS.md` are left in place: they hold your work, not the tooling.
+Git hooks come off with `git config --unset core.hooksPath`.
+
 ## Update
 
 From your project's root:
