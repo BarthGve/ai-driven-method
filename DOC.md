@@ -102,6 +102,14 @@ repo → `/dm-prd`; `docs/prd.md` already present → `/dm-status`.
 
 **/dm-architect** — analyzes existing code or **recommends a stack from the PRD** (no hardcoded Next.js). Records the choice as an ADR, fills architecture + conventions in `AGENTS.md`.
 
+**/dm-design** offers three paths. On Claude Code the **canvas** path invokes the native
+`/design` command: the artboards are drafted in session as `docs/designs/<id>.dc.html` and
+refined by the user in the published Artifact. Codex and Grok have no `/design`, so they
+keep the brief round-trip — the command offers only the paths the running tool can honour.
+On every path the design system is copied into the request and the file gate is unchanged:
+the published Artifact is never the deliverable, `docs/designs/<id>.md` plus the committed
+mockup are.
+
 **/dm-design-system** — captures tokens/components into `docs/design-system.md`. Fail-closed: no source, no design system.
 
 ### Story framing (docs — branch `feature/<story-id>`)
@@ -221,6 +229,7 @@ One canonical source (`src/`), one installer, per-tool emission — no forked co
 | File/board/git gates | ✅ | ✅ | ✅ |
 | "No direct coding" via tool permissions | ✅ mechanical | ~ agent sandbox | ~ agent sandbox |
 | Subagent model routing | ✅ | note only | note only |
+| Design canvas (`/design`) | ✅ native | brief round-trip | brief round-trip |
 
 ### Repo-level enforcement (`--hooks`)
 

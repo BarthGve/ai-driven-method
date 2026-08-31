@@ -1,6 +1,6 @@
 # Design Brief — Story <id>
 
-> Paste this brief into the external design tool (Claude Design / Gemini). It is self-contained: story, screens, constraints, expected output.
+> Paste this brief into the external design tool (Gemini, or any other). It is self-contained: story, screens, constraints, expected output. On Claude Code, prefer the native `/design` canvas — no round-trip needed.
 
 ## Story
 <recap + acceptance criteria>
