@@ -17,6 +17,7 @@ set -euo pipefail
 #   ./install.sh uninstall [--target …]  Retire ce que l'install a posé (manifeste), rien d'autre
 #   --profile full|framing|delivery    Sous-ensemble de commandes (défaut : full)
 #   --dry-run                          Avec uninstall : liste sans supprimer
+#   --permissions                      Pose les règles de permission Claude (opt-in) : plus d'approbation sur les scripts .dm/lib
 #   --hooks                            Pose les git hooks d'enforcement (opt-in, réversible)
 #   --force                            Écrase aussi les templates modifiés localement
 #
@@ -59,11 +60,12 @@ CACHE="$HOME/.claude/ai-driven-method"
 ORIG="./.driven/templates.orig"   # baseline templates (tool-neutral), for local-edit detection
 
 # --- Arguments : mode + --target + --hooks + --force ---
-FORCE=0; HOOKS=0; TARGET="claude"; MODE=""; PROFILE="full"; DRY_RUN=0; EXPLICIT=0
+FORCE=0; HOOKS=0; PERMS=0; TARGET="claude"; MODE=""; PROFILE="full"; DRY_RUN=0; EXPLICIT=0
 while [ $# -gt 0 ]; do
   case "$1" in
     -f|--force)   FORCE=1 ;;
     --hooks)      HOOKS=1 ;;
+    --permissions) PERMS=1 ;;
     --dry-run)    DRY_RUN=1 ;;
     --yes|-y)     EXPLICIT=1 ;;
     --target)     TARGET="${2:-}"; EXPLICIT=1; shift ;;
@@ -158,6 +160,38 @@ copy_tooling_claude() {
   for f in "$SRC/skills/"*/;     do echo "skills/$(basename "$f")"   >> "$dest/.dm-manifest"; done
   for f in "$SRC/agents/"*.md;   do echo "agents/$(basename "$f")"   >> "$dest/.dm-manifest"; done
   echo "$VERSION" > "$dest/.dm-version"
+  install_permissions "$dest"
+}
+
+# Permissions Claude : les commandes appellent `bash .dm/lib/*.sh` et écrivent dans docs/, .dm/.
+# Sans règle, chaque appel redemande une approbation. Opt-in (--permissions) : on fusionne src/permissions.txt dans
+# <dest>/settings.json (idempotent, rien d'autre touché). Sans jq : on affiche quoi ajouter.
+permission_rules_json() { grep -v '^#' "$SRC/permissions.txt" | grep -v '^$' | jq -R . | jq -s .; }
+install_permissions() {
+  local settings="$1/settings.json" rules tmp
+  [ "$PERMS" = 1 ] && [ -f "$SRC/permissions.txt" ] || return 0
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "⚠  jq absent — permissions non posées. Ajoute à permissions.allow de $settings :"
+    grep -v '^#' "$SRC/permissions.txt" | grep -v '^$' | sed 's/^/     /'
+    return 0
+  fi
+  [ -f "$settings" ] || echo '{}' > "$settings"
+  rules="$(permission_rules_json)"; tmp="$(mktemp)"
+  if jq --argjson r "$rules" '.permissions.allow = ((.permissions.allow // []) + $r | unique)' "$settings" > "$tmp"; then
+    mv "$tmp" "$settings"
+  else
+    rm -f "$tmp"; echo "⚠  $settings illisible (JSON invalide ?) — permissions non posées."
+  fi
+}
+remove_permissions() {
+  local settings="$1/settings.json" rules tmp
+  [ -f "$settings" ] && [ -f "$SRC/permissions.txt" ] && command -v jq >/dev/null 2>&1 || return 0
+  rules="$(permission_rules_json)"; tmp="$(mktemp)"
+  if jq --argjson r "$rules" 'if .permissions.allow then .permissions.allow -= $r else . end' "$settings" > "$tmp"; then
+    mv "$tmp" "$settings"
+  else
+    rm -f "$tmp"
+  fi
 }
 
 # Codex : transforme via le build Node → .codex/skills.
@@ -279,6 +313,7 @@ uninstall_one() {
     fi
   done < "$dest/.dm-manifest"
   if [ "$DRY_RUN" = 0 ]; then
+    case "$dest" in */.claude) remove_permissions "$dest" ;; esac
     rm -f "$dest/.dm-manifest" "$dest/.dm-version"
     rmdir "$dest/commands" "$dest/skills" "$dest/agents" 2>/dev/null || true
   fi

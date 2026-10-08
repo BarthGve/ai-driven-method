@@ -99,3 +99,29 @@ test("the installer stamps a semver, not a git sha", () => {
   assert.match(stamped, /^\d+\.\d+\.\d+$/, `expected semver, got ${stamped}`);
   assert.equal(stamped, readFileSync(join(ROOT, "VERSION"), "utf8").trim());
 });
+
+test("install merges permission rules into settings.json, uninstall removes only those", () => {
+  const d = project();
+  mkdirSync(join(d, ".claude"), { recursive: true });
+  writeFileSync(join(d, ".claude/settings.json"), JSON.stringify({ permissions: { allow: ["Bash(git:*)"] }, theme: "x" }));
+  run(d, ["--target", "claude"]);
+  assert.deepEqual(JSON.parse(readFileSync(join(d, ".claude/settings.json"), "utf8")).permissions.allow, ["Bash(git:*)"]); // opt-in
+  run(d, ["--target", "claude", "--permissions"]);
+  run(d, ["--target", "claude", "--permissions"]); // idempotent
+  const s = JSON.parse(readFileSync(join(d, ".claude/settings.json"), "utf8"));
+  assert.equal(s.theme, "x");
+  assert.ok(s.permissions.allow.includes("Bash(git:*)"));
+  assert.equal(s.permissions.allow.filter((r) => r === "Bash(bash .dm/lib/dm-board.sh:*)").length, 1);
+  run(d, ["uninstall", "--target", "claude"]);
+  const after = JSON.parse(readFileSync(join(d, ".claude/settings.json"), "utf8"));
+  assert.deepEqual(after.permissions.allow, ["Bash(git:*)"]);
+});
+
+test("dm-port is stable per directory, distinct across directories, and off the dev ports", () => {
+  const port = (cwd, ...a) => Number(execFileSync("bash", [join(ROOT, "src/lib/dm-port.sh"), ...a], { cwd, encoding: "utf8" }));
+  const a = project(), b = project();
+  assert.equal(port(a), port(a));
+  assert.notEqual(port(a), port(b));
+  assert.notEqual(port(a), port(a, 1));
+  assert.ok(port(a) >= 20000 && port(a) < 30000);
+});

@@ -43,6 +43,7 @@ Constraints:
   fictional safety net.
 - Accepted ADRs in docs/decisions/ are law, same as AGENTS.md. A structural choice they don't settle → stop and report; decisions are made at plan level, not mid-implementation.
 - You implement only what the plan specifies. No out-of-scope additions.
+- Servers and browser/e2e checks you launch use `bash .dm/lib/dm-port.sh` as port, never the dev port (AGENTS.md, Ports). Stop them before you finish.
 - You touch neither the architecture nor the rules.
 
 At the end: a concise summary — tasks done, files touched, tests added and

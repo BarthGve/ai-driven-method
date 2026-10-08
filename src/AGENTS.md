@@ -102,6 +102,11 @@ worktree, wrong branch, detached HEAD or a second branch name is a hard stop.
 Never improvise with `git switch`, `git checkout`, `git stash` or an
 `-isolated` suffix.
 
+Ports: a server, e2e run or browser check launched by an agent never uses the
+developer's dev port (3000, 5173, 8080…). Get yours with `bash .dm/lib/dm-port.sh`
+(stable per worktree, 20000-29999) and pass it to the tool (`PORT=$(bash .dm/lib/dm-port.sh) npm run dev`,
+`--port`, or the test config's baseURL). Stop what you started before you finish.
+
 One agent, one working directory. While an agent owns a directory, no second
 agent and no main context may edit, checkout or stash in it.
 

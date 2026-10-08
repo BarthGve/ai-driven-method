@@ -1,0 +1,10 @@
+# driven permissions — one Claude Code permission rule per line.
+# Merged into <dest>/settings.json (permissions.allow) by `install.sh --permissions`, removed by uninstall.
+# Exact shipped scripts only; never a wildcard on .dm/lib, never write access to .dm/ (no write-then-run).
+Bash(bash .dm/lib/dm-board.sh:*)
+Bash(bash .dm/lib/dm-wiki.sh:*)
+Bash(bash .dm/lib/dm-version.sh:*)
+Bash(bash .dm/lib/dm-init.sh:*)
+Bash(bash .dm/lib/dm-port.sh:*)
+Write(docs/**)
+Edit(docs/**)
