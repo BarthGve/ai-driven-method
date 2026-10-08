@@ -6,6 +6,7 @@ import {
   chmodSync,
   readFileSync,
   cpSync,
+  existsSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
@@ -172,8 +173,9 @@ test("pre-push refuses non-next push into main", () => {
 test("pre-push allows next into main", () => {
   const d = repo();
   execSync("git checkout next", { cwd: d, stdio: "pipe" });
-  writeFileSync(join(d, "release.txt"), "1");
-  execSync("git add release.txt && git commit -m release", { cwd: d, stdio: "pipe" });
+  writeFileSync(join(d, "VERSION"), "0.2.0\n");
+  writeFileSync(join(d, "CHANGELOG.md"), "## 0.2.0\n");
+  execSync("git add . && git commit -m release", { cwd: d, stdio: "pipe" });
   const sha = execSync("git rev-parse HEAD", { cwd: d, encoding: "utf8" }).trim();
   const zero = "0000000000000000000000000000000000000000";
   const input = `refs/heads/next ${sha} refs/heads/main ${zero}\n`;
@@ -212,6 +214,8 @@ test("pre-push allows ticket feature branch into next with Ship allowed", () => 
   );
   execSync("git checkout -b feature/s01-x/t01-y next", { cwd: d, stdio: "pipe" });
   writeFileSync(join(d, "code.js"), "1");
+  mkdirSync(join(d, "docs/product"), { recursive: true });
+  writeFileSync(join(d, "docs/product/s01-x.md"), "p");
   execSync("git add code.js docs && git commit -m feat", { cwd: d, stdio: "pipe" });
   const sha = execSync("git rev-parse HEAD", { cwd: d, encoding: "utf8" }).trim();
   const zero = "0000000000000000000000000000000000000000";
@@ -239,44 +243,6 @@ test("AGENTS.md lists init docs release, hybrid PRD, child ready, orchestrator m
   assert.match(t, /two modes/);
   assert.match(t, /remaining person-days/);
   assert.match(t, /<< IP Mike/);
-});
-
-test("dm-gate.yml refuses non-next PRs into main and gates ticket/framing/release", () => {
-  const t = readFileSync(join(ROOT, "src/workflows/dm-gate.yml"), "utf8");
-  assert.match(t, /github.head_ref != 'next'/);
-  assert.match(t, /PRs into main must come from next/);
-  assert.match(t, /Ship allowed: yes/);
-  assert.match(t, /docs\/product\//);
-  assert.match(t, /docs-only/);
-  assert.match(t, /CHANGELOG\.md/);
-});
-
-test("dm-gate.yml never interpolates ${{ }} inside a run: block", () => {
-  // GitHub substitutes ${{ }} into the script text before bash parses it, so an
-  // attacker-controlled branch name like `feature/x$(id)` would execute. Values must
-  // reach the shell as env data instead.
-  const lines = readFileSync(join(ROOT, "src/workflows/dm-gate.yml"), "utf8").split("\n");
-  const offenders = [];
-  let inRun = false;
-  let runIndent = 0;
-  for (const [i, line] of lines.entries()) {
-    if (line.trim() === "") continue;
-    const indent = line.length - line.trimStart().length;
-    if (inRun && indent <= runIndent) inRun = false;
-    if (inRun && line.includes("${{")) offenders.push(`${i + 1}: ${line.trim()}`);
-    if (/^\s*run:\s*\|/.test(line)) {
-      inRun = true;
-      runIndent = indent;
-    }
-  }
-  assert.deepEqual(offenders, []);
-});
-
-test("dm-gate.yml passes refs to the shell as env vars", () => {
-  const t = readFileSync(join(ROOT, "src/workflows/dm-gate.yml"), "utf8");
-  assert.match(t, /HEAD_REF: \$\{\{ github\.head_ref \}\}/);
-  assert.match(t, /BASE_REF: \$\{\{ github\.base_ref \}\}/);
-  assert.match(t, /BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \}\}/);
 });
 
 test("ready-ok passes when .dm/config.json is missing", () => {
@@ -366,4 +332,12 @@ test("pre-commit refuses code on story framing branch", () => {
   execSync("git checkout -b feature/s01-x next", { cwd: d, stdio: "pipe" });
   stageCode(d);
   assert.throws(() => runGate(d, ["pre-commit"]));
+});
+
+test("no GitHub Actions workflow ships; dm-init disables Actions on the repo", () => {
+  assert.equal(existsSync(join(ROOT, "src/workflows")), false);
+  assert.equal(existsSync(join(ROOT, ".github/workflows")), false);
+  const init = readFileSync(join(LIB_SRC, "dm-init.sh"), "utf8");
+  assert.match(init, /actions\/permissions" -F enabled=false/);
+  assert.doesNotMatch(init, /cp .*\.github\/workflows/);
 });

@@ -48,7 +48,7 @@ stop; never overlap edits.
 
 ## Pipeline (commands)
 - `/dm-prd`        frames the product: clone an existing SaaS **or** greenfield (WHAT + WHY). Not kill-only.
-- `/dm-init`       GitHub remote, `main`/`next`, Project board, wiki, `VERSION`, CI
+- `/dm-init`       GitHub remote, `main`/`next`, Project board, wiki, `VERSION`
 - `/dm-stories`    breaks it down into shippable user stories (parent Issues)
 - `/dm-stories-review`  reviews the breakdown against the PRD perimeter (stories-reviewer subagent)
 - `/dm-architect`  sets the technical HOW + the conventions (fills `<< IP Mike >>` below)

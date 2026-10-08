@@ -4,7 +4,7 @@
 # the gates live in the repo, not in a tool's per-command permissions.
 #
 # Branches (app git flow):
-#   main  = production (only updated from next; GitHub branch protection is the real guarantee)
+#   main  = production (only updated from next, VERSION bumped; enforced by pre-push)
 #   next  = integration (feature PRs land here)
 #   feature/<story-id>              = story framing (docs only)
 #   feature/<story-id>/<ticket-id>  = ticket implementation
@@ -16,7 +16,8 @@
 #   dm-gate default-integration-branch       prints `next`
 #   dm-gate pre-commit                       block code without validated plan + ready child;
 #                                            block app code on story framing branches (docs only)
-#   dm-gate pre-push                         refuse non-next into main; gate ticket merges into next
+#   dm-gate pre-push                         refuse non-next into main; require VERSION bump + changelog on release;
+#                                            gate ticket merges into next (review + product doc)
 set -euo pipefail
 
 repo_root() { git rev-parse --show-toplevel 2>/dev/null || pwd; }
@@ -89,6 +90,31 @@ ship_allowed() {
   fi
   echo "dm-gate: ship blocked for '$id' (docs/reviews/$id.md is not 'Ship allowed: yes')." >&2
   return 1
+}
+
+# Ticket PRs require the story product doc (docs/product/<story-id>.md).
+product_doc_ok() {
+  local story="${1%%/*}" root; root="$(repo_root)"
+  [ -f "$root/docs/product/$story.md" ] && return 0
+  echo "dm-gate: missing docs/product/$story.md — ticket merges require the story product doc." >&2
+  return 1
+}
+
+# Release next → main: VERSION must differ from <base-sha> (empty = first push) and CHANGELOG.md must mention it.
+release_ok() {
+  local head_sha="$1" base_sha="${2:-}" head_ver base_ver=""
+  head_ver="$(git show "$head_sha:VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
+  [ -n "$base_sha" ] && base_ver="$(git show "$base_sha:VERSION" 2>/dev/null | tr -d '[:space:]' || true)"
+  if [ -z "$head_ver" ]; then
+    echo "dm-gate: VERSION missing on next." >&2; return 1
+  fi
+  if [ "$head_ver" = "$base_ver" ]; then
+    echo "dm-gate: VERSION unchanged vs main ($head_ver) — bump before release." >&2; return 1
+  fi
+  if git cat-file -e "$head_sha:CHANGELOG.md" 2>/dev/null \
+    && ! git show "$head_sha:CHANGELOG.md" | grep -Fq "$head_ver"; then
+    echo "dm-gate: CHANGELOG.md exists but does not mention $head_ver." >&2; return 1
+  fi
 }
 
 # Child ticket must be ready or in progress when the board is initialized.
@@ -176,11 +202,14 @@ pre_push() {
     [ -n "${local_ref:-}" ] || continue
     [ "$local_sha" != "$zero" ] || continue
 
-    # Production: only next may update main. Client-side hint — GitHub protection is authoritative.
+    # Production: only next may update main, with a bumped VERSION + changelog.
     if [ "$remote_ref" = "refs/heads/$prod" ]; then
       if [ "$local_ref" != "refs/heads/$integ" ]; then
-        echo "dm-gate: refusing push to $prod from ${local_ref#refs/heads/} — only $integ may update production. (GitHub branch protection is the real guarantee for $prod.)" >&2
+        echo "dm-gate: refusing push to $prod from ${local_ref#refs/heads/} — only $integ may update production." >&2
         rc=1
+      else
+        printf '%s' "$remote_sha" | grep -qE '^0+$' && remote_sha=""
+        release_ok "$local_sha" "$remote_sha" || rc=1
       fi
       continue
     fi
@@ -199,9 +228,9 @@ pre_push() {
           # Ticket branches require Ship allowed; story framing (docs-only) does not.
           id="$(story_id_from_branch "${local_ref#refs/heads/}")"
           if [ -n "$(ticket_id_from_branch "${local_ref#refs/heads/}")" ] \
-            && [ -n "$id" ] && ! ship_allowed "$id"; then
-            echo "dm-gate: refusing to push $remote_ref — '$id' has no passed review." >&2
-            rc=1
+            && [ -n "$id" ]; then
+            ship_allowed "$id" || { echo "dm-gate: refusing to push $remote_ref — '$id' has no passed review." >&2; rc=1; }
+            product_doc_ok "$id" || rc=1
           fi
           ;;
       esac
@@ -216,6 +245,7 @@ pre_push() {
           echo "dm-gate: refusing to push $remote_ref — ticket '$id' was merged without a passed review." >&2
           rc=1
         fi
+        product_doc_ok "$id" || rc=1
       done < <(git log --merges --format='%s' "$range" 2>/dev/null \
                 | sed -n "s/.*Merge branch '\\(feature\\/[^']*\\)'.*/\\1/p" \
                 | sed 's#^feature/##' | sort -u)

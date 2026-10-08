@@ -69,7 +69,7 @@ Then story framing (docs on `feature/<story-id>`), then ticket delivery
 | --- | --- | --- | --- |
 | Continue | `/dm-continue` | Existing project: product baseline + Issue mapping, mutates nothing | `docs/onboarding.md` |
 | PRD | `/dm-prd` | Hybrid frame: clone **or** greenfield — the WHAT and the WHY | `docs/prd.md` |
-| Init | `/dm-init` | Remote, `main`/`next`, Project board, wiki, `VERSION`, CI | `.dm/config.json`, `VERSION`, protections |
+| Init | `/dm-init` | Remote, `main`/`next`, Project board, wiki, `VERSION` | `.dm/config.json`, `VERSION`, protections |
 | Stories | `/dm-stories` | Shippable US + **one parent Issue** per US (`backlog`) | `docs/stories.md` |
 | Stories Review | `/dm-stories-review` | Fresh-context review of the breakdown vs the PRD | `docs/reviews/stories.md` |
 | Architecture | `/dm-architect` | Stack from PRD / existing code; conventions | `docs/architecture.md` + `AGENTS.md` |
@@ -95,7 +95,7 @@ repo → `/dm-prd`; `docs/prd.md` already present → `/dm-status`.
 
 **/dm-prd** — frames the product by interviewing the user. First question: **clone** an existing SaaS vs **greenfield**. Clone mode covers target, kill mode (internal replacement vs competing product), why, the 20% perimeter, complexity scores, graveyard, and angle beyond parity. Greenfield covers need, users, why now, in/out of scope (graveyard still kills creep), constraints, and success — no fake “target SaaS”. Nothing is filled without validation. The WHAT and the WHY, never the HOW.
 
-**/dm-init** — bootstraps the app repo after the PRD: confirm remote name/visibility/owner, create `next` from `main`, protect both branches, create the Project V2 board with statuses `backlog | ready | in progress | test | shipped`, write `.dm/config.json`, enable the wiki, write `VERSION` (`0.1.0` if absent), copy the CI workflow. Idempotent: re-runs only fill gaps.
+**/dm-init** — bootstraps the app repo after the PRD: confirm remote name/visibility/owner, create `next` from `main`, protect both branches, create the Project V2 board with statuses `backlog | ready | in progress | test | shipped`, write `.dm/config.json`, enable the wiki, write `VERSION` (`0.1.0` if absent). Idempotent: re-runs only fill gaps.
 
 **/dm-stories** — breaks the PRD into agentic-ready user stories (`agentic-stories` skill). Each US gets **one parent Issue** in `backlog`. Child tickets are **not** created here. Parent US never uses status `ready`.
 
@@ -253,7 +253,7 @@ One canonical source (`src/`), one installer, per-tool emission — no forked co
 - **pre-commit** — no **code** on `feature/<story>/<ticket>` without `validated: yes` plan; when `.dm/config.json` exists, child must be `ready` or `in progress`. Docs-only always allowed. Story framing branches are docs-only.
 - **pre-push** — only `next` may update `main`; ticket branches need `Ship allowed: yes` before landing on `next`.
 
-So plan, ready, and review gates hold on Claude, Codex and Grok alike — enforcement lives in the repo, not the harness. CI template `dm-gate.yml` (copied at `/dm-init`) mirrors the ship / version checks on pull requests.
+So plan, ready, and review gates hold on Claude, Codex and Grok alike — enforcement lives in the repo, not the harness. The `pre-push` hook also enforces the product doc on ticket merges and the VERSION bump + changelog on release (`next` → `main`); no CI workflow is installed and `/dm-init` disables GitHub Actions on the repo.
 
 ## Provenance
 

@@ -11,7 +11,7 @@ Règle unique : interdit de coder en direct. Chaque feature passe par le pipelin
 
 ## Une fois par projet
 1. /dm-prd <cible>       — cadre le produit : clone ou greenfield, périmètre, QUOI + POURQUOI
-2. /dm-init              — repo GitHub, branches `main`/`next`, Project, wiki, VERSION, CI
+2. /dm-init              — repo GitHub, branches `main`/`next`, Project, wiki, VERSION
 3. /dm-stories           — découpe en **user stories** (Issues parent, colonne `backlog`)
 4. /dm-stories-review    — relit le découpage vs le PRD (contexte vierge)
 5. /dm-architect         — stack, conventions, rules

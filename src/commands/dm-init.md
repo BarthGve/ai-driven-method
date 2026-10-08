@@ -1,5 +1,5 @@
 ---
-description: Bootstrap the app repo — remote, next/main, Project board, wiki, VERSION, CI
+description: Bootstrap the app repo — remote, next/main, Project board, wiki, VERSION
 allowed-tools:
   - Read
   - Bash
@@ -35,6 +35,6 @@ bash .dm/lib/dm-init.sh run \
 
 If `.dm/lib/dm-init.sh` is missing, the method was not installed into this app — stop and point to `install.sh` (it must copy `src/lib` → `.dm/lib`).
 
-The script is idempotent: existing remote / `next` / project / wiki / `VERSION` are detected and only gaps are filled. It also copies `.dm/workflows/dm-gate.yml` (or the method template) into `.github/workflows/dm-gate.yml`.
+The script is idempotent: existing remote / `next` / project / wiki / `VERSION` are detected and only gaps are filled. It also disables GitHub Actions on the repo (checks run locally via the git hooks) and removes any `.github/workflows/dm-gate.yml` left by older versions.
 
 End with: what was created (remote URL, `next`, project, `.dm/config.json`, `VERSION`), then "Next: /dm-stories".

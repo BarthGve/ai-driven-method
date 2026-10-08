@@ -123,26 +123,6 @@ EOF
   fi
 }
 
-copy_ci_workflow() {
-  local src=""
-  local here
-  here="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
-  # Prefer method-repo workflows next to lib (../../src/workflows from installed .dm/lib)
-  for cand in \
-    "$here/../workflows/dm-gate.yml" \
-    "$here/../../src/workflows/dm-gate.yml" \
-    "$here/../../workflows/dm-gate.yml"
-  do
-    if [ -f "$cand" ]; then src="$cand"; break; fi
-  done
-  if [ -z "$src" ]; then
-    echo "dm-init: no dm-gate.yml template yet — skip CI copy" >&2
-    return 0
-  fi
-  mkdir -p .github/workflows
-  cp "$src" .github/workflows/dm-gate.yml
-}
-
 resolve_owner_repo() {
   if [ -z "$OWNER" ]; then
     OWNER="$(gh api user -q .login 2>/dev/null || true)"
@@ -197,6 +177,18 @@ enable_wiki() {
   if ! gh api -X PATCH "repos/${OWNER}/${REPO_NAME}" -f has_wiki=true >/dev/null; then
     warn "failed to enable wiki for ${OWNER}/${REPO_NAME}"
   fi
+}
+
+# Workflows run locally (hooks), never on GitHub: switch Actions off on the repo (idempotent)
+# and drop the dm-gate.yml that earlier dm-init versions copied in.
+disable_actions() {
+  if [ -f .github/workflows/dm-gate.yml ]; then
+    git rm -q -f .github/workflows/dm-gate.yml 2>/dev/null || rm -f .github/workflows/dm-gate.yml
+    echo "dm-init: removed .github/workflows/dm-gate.yml — commit the removal" >&2
+  fi
+  [ "$CREATE_REMOTE" -eq 1 ] && git remote get-url origin >/dev/null 2>&1 || return 0
+  gh api -X PUT "repos/${OWNER}/${REPO_NAME}/actions/permissions" -F enabled=false >/dev/null \
+    || warn "failed to disable GitHub Actions on ${OWNER}/${REPO_NAME} — workflows may consume compute; disable them in Settings → Actions"
 }
 
 protect_branch() {
@@ -387,11 +379,11 @@ cmd_run() {
   ensure_git
   resolve_owner_repo
   write_version_and_changelog
-  copy_ci_workflow
   create_remote_if_needed
   ensure_next_branch
   if [ "$CREATE_REMOTE" -eq 1 ]; then
     enable_wiki
+    disable_actions
     apply_rulesets
   else
     echo "dm-init: --no-remote — skip wiki enable, branch protection, and rulesets (no gh api)" >&2

@@ -55,7 +55,7 @@ Read docs/stories.md, resolve the target story id (`s<number>-<slug>`) and isola
 2. Draft the artboards as `docs/designs/<id>.dc.html`, inside the story worktree. They are files: they get committed like any other deliverable.
 3. Write `docs/designs/<id>.md` (structure: @templates/design-screen.md) describing the screens and pointing to the artboards.
 
-**The published Artifact is not the deliverable.** It is where the user refines the design visually, but `/dm-plan`, the `pre-commit` hook and the CI gate all read files. A story whose design lives only in an Artifact does not pass the gate.
+**The published Artifact is not the deliverable.** It is where the user refines the design visually, but `/dm-plan`, the `pre-commit` and `pre-push` hooks all read files. A story whose design lives only in an Artifact does not pass the gate.
 
 **Re-running.** `/design` creates or re-seeds a canvas; an existing one is edited in its published Artifact. So if `docs/designs/<id>.dc.html` already exists, do **not** re-invoke blindly: ask (AskUserQuestion) whether to re-seed the canvas from scratch or to keep the current artboards and let the user edit the published Artifact.
 
