@@ -49,6 +49,16 @@ test("bump syncs package.json and CHANGELOG when present", () => {
   assert.match(log, /^## 0\.1\.1 - \d{4}-\d{2}-\d{2}/m);
 });
 
+test("bump opens the changelog section below the intro, above the previous release", () => {
+  const d = mkdtempSync(join(tmpdir(), "ver-"));
+  writeFileSync(join(d, "VERSION"), "0.1.0\n");
+  writeFileSync(join(d, "CHANGELOG.md"), "# Changelog\n\nIntro line.\n\n## 0.1.0 - 2026-01-01\n\n- old\n");
+  execFileSync("bash", [SCRIPT, "bump", "patch"], { cwd: d, encoding: "utf8" });
+  const log = readFileSync(join(d, "CHANGELOG.md"), "utf8");
+  assert.ok(log.indexOf("Intro line.") < log.indexOf("## 0.1.1"), "intro must stay first");
+  assert.ok(log.indexOf("## 0.1.1") < log.indexOf("## 0.1.0"), "new section above previous");
+});
+
 test("driven itself carries a VERSION and a matching changelog entry", () => {
   const v = readFileSync(join(ROOT, "VERSION"), "utf8").trim();
   assert.match(v, /^\d+\.\d+\.\d+$/);

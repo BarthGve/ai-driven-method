@@ -125,3 +125,9 @@ test("dm-port is stable per directory, distinct across directories, and off the 
   assert.notEqual(port(a), port(a, 1));
   assert.ok(port(a) >= 20000 && port(a) < 30000);
 });
+
+test("dm-port rejects a non-numeric offset instead of evaluating it", () => {
+  const d = project();
+  assert.throws(() => execFileSync("bash", [join(ROOT, "src/lib/dm-port.sh"), "a[$(touch pwned)]"], { cwd: d, stdio: "pipe" }));
+  assert.equal(existsSync(join(d, "pwned")), false);
+});

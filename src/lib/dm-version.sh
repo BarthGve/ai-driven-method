@@ -89,14 +89,10 @@ append_changelog() {
     const fs = require("fs");
     const heading = process.argv[1];
     let t = fs.readFileSync("CHANGELOG.md", "utf8");
-    if (t.startsWith("# ")) {
-      const nl = t.indexOf("\n");
-      const title = nl >= 0 ? t.slice(0, nl + 1) : t + "\n";
-      const rest = nl >= 0 ? t.slice(nl + 1).replace(/^\n*/, "") : "";
-      t = title + "\n" + heading + "\n\n" + rest;
-    } else {
-      t = heading + "\n\n" + t;
-    }
+    // New section goes above the newest release (first "## "), below any title/intro; none yet → end.
+    const m = t.match(/^## /m);
+    t = m ? t.slice(0, m.index) + heading + "\n\n" + t.slice(m.index)
+          : t.replace(/\n*$/, "\n\n") + heading + "\n\n";
     fs.writeFileSync("CHANGELOG.md", t);
   ' "$heading"
 }
