@@ -30,8 +30,14 @@ set -euo pipefail
 REPO="https://github.com/BarthGve/ai-driven-method.git"
 
 # --- Résolution du payload (src/) : fichiers locaux, sinon clone (cas curl|bash) ---
+# `uninstall` ne lit que le manifeste posé dans le dossier : pas de payload, donc pas de
+# clone. Sans ce garde-fou, `curl … | bash -s -- uninstall` re-télécharge tout le repo.
+UNINSTALL_ONLY=0; case " $* " in *" uninstall "*) UNINSTALL_ONLY=1 ;; esac
+
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
-if [ -n "${SELF_DIR:-}" ] && [ -f "$SELF_DIR/src/commands/dm-prd.md" ]; then
+if [ "$UNINSTALL_ONLY" = 1 ]; then
+  SRC="${SELF_DIR:-.}/src"; PAYLOAD_ROOT="${SELF_DIR:-.}"
+elif [ -n "${SELF_DIR:-}" ] && [ -f "$SELF_DIR/src/commands/dm-prd.md" ]; then
   SRC="$SELF_DIR/src"
   PAYLOAD_ROOT="$SELF_DIR"
 else
@@ -84,7 +90,7 @@ load_profile() {
   echo "Disponibles : $(grep -v '^#' "$SRC/profiles.txt" | grep -v '^$' | cut -d: -f1 | tr '\n' ' ')" >&2
   exit 1
 }
-load_profile "$PROFILE"
+[ "$UNINSTALL_ONLY" = 1 ] || load_profile "$PROFILE"
 
 # Vrai si la commande <basename sans .md> fait partie du profil courant.
 in_profile() {
@@ -214,16 +220,12 @@ sync_templates() {
   done
 }
 
-# Tooling bash helpers + CI workflow template — always overwrite on install/update.
+# Tooling bash helpers — always overwrite on install/update.
 sync_lib() {
   local payload="${1:-$SRC}"
   mkdir -p ./.dm/lib
   cp -R "$payload/lib/." ./.dm/lib/
   chmod +x ./.dm/lib/*.sh 2>/dev/null || true
-  if [ -d "$payload/workflows" ]; then
-    mkdir -p ./.dm/workflows
-    cp -R "$payload/workflows/." ./.dm/workflows/
-  fi
 }
 
 # AGENTS.md est la source de règles partagée (native pour Codex, importée par CLAUDE.md pour Claude).
@@ -327,7 +329,6 @@ case "$MODE" in
       mkdir -p "$CACHE"
       cp -R "$SRC/templates" "$CACHE/"
       cp -R "$SRC/lib" "$CACHE/"
-      [ -d "$SRC/workflows" ] && cp -R "$SRC/workflows" "$CACHE/"
       cp "$SRC/AGENTS.md" "$CACHE/"
       cp "$PAYLOAD_ROOT/install.sh" "$CACHE/install.sh" 2>/dev/null \
         || cp "${BASH_SOURCE[0]:-$0}" "$CACHE/install.sh" 2>/dev/null || true
@@ -369,7 +370,7 @@ case "$MODE" in
 
   update)
     install_target "$TARGET"
-    echo "✅ driven mis à jour ($TARGET, version $VERSION). AGENTS.md jamais touché — fusionne à la main si les rules ont évolué."
+    echo "🔄 driven mis à jour ($TARGET, version $VERSION). AGENTS.md jamais touché — fusionne à la main si les rules ont évolué."
     if [ "$HOOKS" = 1 ]; then install_hooks; fi
     ;;
 

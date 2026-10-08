@@ -158,8 +158,16 @@ and a missing skill breaks the command that preloads it. The table lives in
 
 ## Uninstall
 
-    ./install.sh uninstall [--target claude|codex|grok|all]
-    ./install.sh uninstall --dry-run    # list what would go, delete nothing
+From the folder where you installed it. The installer is not copied into your project,
+so run it the same way you installed it — one line, nothing to clone:
+
+    curl -fsSL https://raw.githubusercontent.com/BarthGve/ai-driven-method/main/install.sh | bash -s -- uninstall
+    curl -fsSL https://raw.githubusercontent.com/BarthGve/ai-driven-method/main/install.sh | bash -s -- uninstall --dry-run
+
+Same thing from a clone, if you have one:
+
+    ~/tools/ai-driven-method/install.sh uninstall [--target claude|codex|grok|all]
+    ~/tools/ai-driven-method/install.sh uninstall --dry-run    # list what would go, delete nothing
 
 It removes exactly what `.dm-manifest` lists — the files the install put there. Commands
 and skills you wrote yourself are not in the manifest, so they survive. Templates,
