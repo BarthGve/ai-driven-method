@@ -4,6 +4,20 @@ Toutes les versions notables de driven. Format [Keep a Changelog](https://keepac
 versionnage [SemVer](https://semver.org/lang/fr/). Pré-1.0 : le mineur peut casser
 l'interface d'installation, le patch jamais.
 
+## 0.6.0 — 2026-10-08
+
+### Ajouté
+- `install.sh --permissions` (opt-in) — fusionne `src/permissions.txt` dans `.claude/settings.json` :
+  les commandes `/dm-*` n'attendent plus d'approbation pour `bash .dm/lib/dm-*.sh` ni pour
+  écrire dans `docs/`. Scripts listés un à un, aucun accès en écriture à `.dm/`. `uninstall`
+  retire ces règles et seulement elles.
+- `.dm/lib/dm-port.sh` — port stable par worktree (20000-29999). Règle « Ports » dans
+  `AGENTS.md` : serveurs, e2e et vérifs navigateur lancés par un agent n'utilisent plus le
+  port du serveur de dev.
+
+### À savoir
+- `AGENTS.md` n'est jamais écrasé : fusionne la règle « Ports » à la main dans les projets existants.
+
 ## 0.5.0 — 2026-08-31
 
 ### Ajouté
