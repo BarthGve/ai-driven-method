@@ -26,7 +26,7 @@ If you can't invoke the Agent tool, stop and report the error. Don't improvise.
 Invoke the Agent tool:
 - subagent_type: stories-reviewer
 - description: Review the story breakdown against the PRD
-- prompt: Review docs/stories.md against docs/prd.md. The stories-review skill is preloaded. Check coverage of the PRD perimeter first (every feature of the "Replicated (core loop)" table must be covered by at least one story — a gap is critical), then graveyard leaks, technical-layer stories, untestable acceptance criteria, dependency order, complexity scores, id format and overlaps. Fill the checklist from templates/stories-review-checklist.md, classify each issue (critical / major / minor), and end your report with the exact lines "Max severity: <critical|major|minor|none>" and "Stories ready: <yes|no>".
+- prompt: Review docs/stories.md against docs/prd.md. Fill templates/stories-review-checklist.md.
 
 Wait for the verdict.
 

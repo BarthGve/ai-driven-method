@@ -97,8 +97,11 @@ function codexSkillFromAgent(name, text, outSkillsDir) {
       : `> Run this in an isolated subagent. On Claude this pins model \`${model}\`; ` +
         `on Codex choose an equivalent tier. ` +
         `Read-only / tool restrictions are advisory here — the git hooks hold the gate.\n\n`;
+  // Claude preloads `skills:`; Codex has no preload, so name them explicitly.
+  const preload = [...fm.matchAll(/^\s+-\s+(\S+)\s*$/gm)].map((m) => m[1]);
+  const skillsNote = preload.length ? `> Load these skills first: ${preload.join(", ")}.\n\n` : "";
   const skillFm = `---\nname: ${name}\ndescription: ${description}\n---\n`;
-  writeFileSync(join(skillDir, "SKILL.md"), skillFm + modelNote + derefInjections(body));
+  writeFileSync(join(skillDir, "SKILL.md"), skillFm + modelNote + skillsNote + derefInjections(body));
 }
 
 function emitCodex(src, out) {
