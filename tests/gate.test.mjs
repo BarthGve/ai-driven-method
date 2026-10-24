@@ -257,18 +257,16 @@ test("AGENTS.md names next as integration and Quick Fix on next", () => {
   assert.match(t, /critical or major|critical\s*\*\*or\*\*\s*major/i);
 });
 
-test("AGENTS.md lists init docs release, hybrid PRD, child ready, orchestrator modes", () => {
+test("AGENTS.md keeps the always-on rules; the phase map lives in /dm-help", () => {
   const t = readFileSync(AGENTS, "utf8");
-  assert.match(t, /\/dm-init/);
-  assert.match(t, /\/dm-docs/);
-  assert.match(t, /\/dm-release/);
   assert.match(t, /PRD → Init → Stories/);
-  assert.match(t, /greenfield/i);
-  assert.match(t, /Not kill-only/);
-  assert.match(t, /child-only|only on child tickets/i);
-  assert.match(t, /two modes/);
-  assert.match(t, /remaining person-days/);
+  assert.match(t, /child-only/);
   assert.match(t, /<< IP Mike/);
+  assert.match(t, /^Merge mode: manual/m);
+  assert.ok(t.split(/\s+/).length < 900, "AGENTS.md is loaded every session: keep it short");
+  const help = readFileSync(join(ROOT, "src/commands/dm-help.md"), "utf8");
+  for (const c of ["/dm-init", "/dm-docs", "/dm-release", "greenfield", "/dm-orchestrator <story> <ticket>"]) assert.ok(help.includes(c), c);
+  assert.match(readFileSync(join(ROOT, "src/commands/dm-status.md"), "utf8"), /remaining person-days/);
 });
 
 test("ready-ok passes when .dm/config.json is missing", () => {

@@ -22,6 +22,8 @@ Locate `.worktrees/<id>`, verify branch `feature/<id>`, and write there. Missing
 2. No board readiness gate — docs is story framing; child tickets may still be in `backlog`.
 
 ## Produce
+Story docs (research, design, plan, product doc) are committed on `feature/<id>`, then reach `next` with the story's PR.
+
 Write `docs/product/<id>.md` from `@templates/product-doc.md`, using:
 - the story in docs/stories.md (purpose, acceptance criteria → visible rules / out of scope)
 - docs/designs/<id>.md when the story has UI (user flow)

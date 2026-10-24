@@ -34,7 +34,8 @@ Constraints:
 - Tests follow the tdd-skill — preloaded, and binding.
 - Accepted ADRs in docs/decisions/ are law, same as AGENTS.md. A structural choice they don't settle → stop and report; decisions are made at plan level, not mid-implementation.
 - You implement only what the plan specifies. No out-of-scope additions.
-- Servers and browser/e2e checks you launch use `bash .dm/lib/dm-port.sh` as port, never the dev port (AGENTS.md, Ports). Stop them before you finish.
+- Servers and browser/e2e checks you launch never use the developer's dev port (3000, 5173, 8080…): pass `bash .dm/lib/dm-port.sh` (stable per worktree, 20000-29999) to the tool — `PORT=$(bash .dm/lib/dm-port.sh) npm run dev`, `--port`, or the test config's baseURL. Stop them before you finish.
+- UI uses only the components and tokens of docs/design-system.md; a need it doesn't cover is a "design system gap" to report, never an invented component or token.
 - You touch neither the architecture nor the rules.
 
 At the end: a concise summary — tasks done, files touched, tests added and
