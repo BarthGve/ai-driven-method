@@ -29,7 +29,8 @@ dm_config_load() {
     const projectNumber = cfg.project_number || cfg.projectNumber || "";
     const fieldId = cfg.status_field_id || cfg.statusFieldId;
     const status = cfg.status_option_ids || cfg.status || {};
-    const q = (s) => JSON.stringify(String(s ?? ""));
+    // Single quotes for the shell: no $(), backtick or $var expansion inside (double quotes would run them).
+    const q = (s) => "\x27" + String(s ?? "").replace(/\x27/g, "\x27\\\x27\x27") + "\x27";
     if (!owner || !repo || !projectId || !fieldId) {
       console.error("dm-config: owner, repo, project_id, status_field_id required");
       process.exit(1);

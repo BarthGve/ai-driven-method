@@ -9,6 +9,9 @@
 #      "projectItems":[{"id":"PVTI_parent","status":{"optionId":"opt1","name":"backlog"}}]}
 #   ]
 # }
+# A project item may also carry "project" (default "PVT_test") and "fieldId" (default
+# "FIELD_status"): the board query only reports items of the queried project, and the
+# status of the queried field. "items_short_remaining": n answers n short lists first.
 set -eu
 STATE="${DM_GH_STUB_STATE:-}"
 if [ -z "$STATE" ] || [ ! -f "$STATE" ]; then
@@ -103,7 +106,28 @@ case "$args" in
     '
     echo '{"id":"PVTI_added"}'
     ;;
-  *"api graphql"*|*"api graphql"*)
+  *"api graphql"*"items("*)
+    node -e '
+      const fs=require("fs");
+      const s=JSON.parse(fs.readFileSync(process.env.DM_GH_STUB_STATE,"utf8"));
+      const argv=process.argv.slice(1);
+      const pid=(argv.find((a)=>a.startsWith("id="))||"").slice(3);
+      s.list_calls=(s.list_calls||0)+1;
+      const nodes=[];
+      for (const i of s.issues||[]) for (const pi of i.projectItems||[]) {
+        if ((pi.project||"PVT_test")!==pid) continue;
+        // Entries sharing an id are one item with several field values.
+        let n=nodes.find((x)=>x.id===pi.id);
+        if (!n) nodes.push(n={id:pi.id, content:{id:i.id||("I_"+i.number), number:i.number, title:i.title}, fieldValues:{nodes:[]}});
+        if (pi.status) n.fieldValues.nodes.push({name:pi.status.name, field:{id:pi.fieldId||"FIELD_status"}});
+      }
+      let total=nodes.length;
+      if ((s.items_short_remaining||0)>0) { s.items_short_remaining--; nodes.splice(0, 1); }
+      fs.writeFileSync(process.env.DM_GH_STUB_STATE, JSON.stringify(s,null,2));
+      process.stdout.write(JSON.stringify([{data:{node:{items:{totalCount:total,pageInfo:{hasNextPage:false,endCursor:null},nodes}}}}]));
+    ' "$@"
+    ;;
+  *"api graphql"*)
     node -e '
       const s=JSON.parse(require("fs").readFileSync(process.env.DM_GH_STUB_STATE,"utf8"));
       if (s.subissue_fail) process.exit(1);

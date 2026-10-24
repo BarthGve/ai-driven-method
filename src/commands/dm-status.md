@@ -8,7 +8,7 @@ allowed-tools:
 ---
 # dm-status — Where the project stands
 
-Derive the state from the files and the board — never guess. Bash is for read-only git queries and **one** `bash .dm/lib/dm-board.sh status-all` (one `<key><TAB><status>` line per issue; skip it, columns `n/a`, if `.dm/config.json` is missing). Never call `status-get` per story or ticket: each call rereads the whole board.
+Derive the state from the files and the board — never guess. Bash is for read-only git queries and **one** `bash .dm/lib/dm-board.sh status-all` (one `<key><TAB><status>` line per issue on the board — no line means the issue is not on the board; skip it, columns `n/a`, if `.dm/config.json` is missing). Never call `status-get` per story or ticket: each call rereads the whole board.
 
 1. Framing: do docs/prd.md, docs/stories.md, docs/architecture.md, docs/design-system.md exist? Also grep `^Stories ready:` docs/reviews/stories.md. Show `VERSION` when present. Missing framing → that command is next (`/dm-prd`, `/dm-init`, …).
 2. Stories (parent US): list ids from docs/stories.md. For each id:

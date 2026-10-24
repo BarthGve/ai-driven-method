@@ -48,8 +48,18 @@ l'interface d'installation, le patch jamais.
   `templates/design-path-*.md`, lus seulement quand ce chemin est choisi.
 
 ### Corrigé
+- `dm-board.sh` lit le statut dans le Project configuré (`project_id`) et sur le champ
+  configuré (`status_field_id`). Il prenait le premier Project de l'issue et son champ
+  « Status » par défaut : faux dès qu'une issue est dans deux Projects, ou quand `/dm-init`
+  a créé un champ « DM Status » (`status-set` échouait avec « no project item id »).
+  Une seule requête GraphQL paginée, 100 éléments par point.
+- Liste du board tronquée : GitHub renvoie parfois moins d'éléments que `totalCount` sans
+  erreur. Relecture bornée (3 essais), puis échec explicite au lieu d'un faux « not found ».
+- Sécurité : `dm-config.sh` entoure les valeurs de `.dm/config.json` d'apostrophes. Avec des
+  guillemets doubles, une valeur contenant `$(…)` ou des backticks était exécutée.
+  Ces trois correctifs viennent du projet lagarde.
 - `dm-board.sh` ne lisait que 200 issues : au-delà, un ticket devenait « issue not found ».
-  Limite portée à 5000 (`DM_ISSUE_LIMIT`), avec un avertissement si elle est atteinte.
+  Il lit désormais tout le board, page par page, sans limite.
 
 ### À savoir
 - Revues existantes : un fichier sans `## Round` reste lu (dernier `Ship allowed:`) ; le
