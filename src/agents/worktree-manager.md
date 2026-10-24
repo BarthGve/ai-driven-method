@@ -38,7 +38,10 @@ Procedure, fail-closed:
    tracked source changes or arbitrary untracked files.
    Ticket worktrees only: apply the `isolation` row of the AGENTS.md Checks
    table from inside the worktree — override only the variables it names (a
-   copied value pointing at the shared service is replaced, never kept), then
+   copied value pointing at the shared service is replaced, never kept) in a
+   file the test runner loads and git ignores (`.env.test.local` or the
+   framework's equivalent, never a tracked file); derive names from
+   `bash .dm/lib/dm-port.sh` run inside the worktree. Then
    run its create/migrate command after step 5. `none` → skip. Missing or still
    a placeholder while the tests use a database → report that parallel tickets
    share it; do not invent a recipe.

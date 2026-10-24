@@ -23,7 +23,7 @@ Proceed as follows:
 2. Analyze the existing repo and document its actual structure and conventions.
 3. Fill the architecture template from this analysis + the PRD needs.
 4. Check/complete the AGENTS.md file at the root with the concrete technical conventions ("Technical conventions" section) and the "Checks" table: the real `focused`, `fast` and `full` commands, what stays in CI, and the `isolation` recipe: for each stateful service the tests touch (database, Redis, queue, bucket), the variable to override with a per-worktree name, where the runner reads it, the command that creates/migrates it and the one that drops it — `none` when the tests touch none. Run the recipe once in a scratch directory to prove it. Only commands that exist and run.
-5. Record each imposed structural decision (stack, patterns, integrations) as an ADR in `docs/decisions/NNN-<slug>.md`, following @templates/adr.md — with the considered options and why they were rejected.
+5. Record each imposed structural decision (stack, patterns, integrations) as an ADR in `docs/decisions/NNN-<slug>.md`, following @templates/adr.md — with the considered options and why they were rejected. ADRs are immutable: a change is a new ADR superseding the old one.
 6. Write the architecture to `docs/architecture.md` and commit it together with AGENTS.md and the ADRs on the default branch (docs: architecture).
 
 End with: "Architecture ready + AGENTS.md updated. Next step: /dm-design-system (once), then /dm-research <story>"

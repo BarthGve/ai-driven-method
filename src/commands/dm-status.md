@@ -16,7 +16,7 @@ Derive the state from the files and the board — never guess. Bash is for read-
    - board column: the `<id>` line of `status-all`
    - research / design / plan (`validated: yes`?) / product doc `docs/product/<id>.md`
    - from the plan: total person-days (sum of `estimate:`) and size mix (count of XS–XL)
-   - remaining: children not yet `test`/`shipped`
+   - remaining person-days: sum of the estimates of children not yet `test`/`shipped` (no actuals)
 3. Tickets (children): for each `t*` in docs/plans/<id>.md:
    - board column: the `<story-id>/<ticket-id>` line of `status-all`
    - size, estimate

@@ -23,6 +23,12 @@ l'interface d'installation, le patch jamais.
   Deux tickets en parallèle ne verrouillent ni ne vident plus la même base de test.
 
 ### Modifié
+- `AGENTS.md` réduit à ce qui sert à chaque session (139 → 68 lignes, ~1 700 → ~600 mots) :
+  règle absolue, Quick Fix, branches et dossiers, ids, stratégie de ship, conventions,
+  Checks. Le reste vit dans la commande ou l'agent qui l'applique (ports et design system
+  dans `implementer`, isolation dans `worktree-manager`, jours restants dans `/dm-status`,
+  ADR immuables dans `/dm-architect`, commit des docs de story dans `/dm-docs`). Un test
+  plafonne sa taille. Les projets déjà installés gardent leur `AGENTS.md` (jamais réécrit).
 - `dm-witness.sh` nomme les fichiers que la commande a modifiés quand il n'enregistre pas
   le passage (`coverage/`, `test-results/`…). Sans ce tampon, la revue et `/dm-ship`
   relançaient la suite complète. L'implementer les ajoute au `.gitignore`, le reviewer en
