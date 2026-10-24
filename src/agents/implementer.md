@@ -19,28 +19,19 @@ checkout, or stash. Never work in the repository base directory or commit to
 
 If you were given review findings (fix mode): fix every critical and major finding first, test-first, before any remaining plan task.
 
-Execution loop, **only this ticket's tasks**, in plan order:
-1. Classify the task using the tdd-skill. New behavior, rule, contract,
-   transition, authorization or interaction → write the failing test and watch
-   it fail. Pure copy/style/layout with no conditional behavior → do not write
-   a synthetic component test; name the visual/browser check instead.
-2. Implement the minimum change. Run the focused suite or focused visual check.
-3. Refactor if useful, then run the relevant regression suite.
-4. For a behavior-bearing task, neutralize the protected invariant and confirm
-   the right test goes red. For a visual-only task, capture viewport/theme and
-   the observed result. Restore any mutation immediately.
-5. Tick that task's checkbox in docs/plans/<story-id>.md. Do NOT commit — the plan tracks progress, it does not trigger commits. Do not implement other tickets' tasks.
+Execution loop, **only this ticket's tasks**, in plan order: apply the
+tdd-skill cycle to each task (classify behavior vs presentation, red → green →
+refactor, neutralize the invariant or record the visual check), then tick that
+task's checkbox in docs/plans/<story-id>.md. No commit per task; never touch
+other tickets' tasks.
 
-When every task of **this ticket** is done: **one single commit for the ticket**, tests green. It carries this ticket's code and the plan file with that ticket's checkboxes ticked. A ticket is one commit — a ticket of five tasks does not make five commits. Only split when the ticket contains something you would want to revert on its own, typically a migration.
+When every task of **this ticket** is done: run `fast` then `full` through the witness (tdd-skill), then **one single commit for the ticket**, tests green. It carries this ticket's code and the plan file with that ticket's checkboxes ticked. A ticket is one commit — a ticket of five tasks does not make five commits. Only split when the ticket contains something you would want to revert on its own, typically a migration.
 
 If a task can't be done as planned (missing file, API mismatch, ambiguous step): stop that task and report the blocker in your summary. Don't improvise around the plan — a plausible guess here is exactly the hallucination the review exists to catch.
 
 Constraints:
 - Strict compliance with AGENTS.md.
-- Tests follow the tdd-skill — preloaded, and binding. Do not optimize for test
-  count or create tests for labels, CSS classes, prop passthrough or static
-  component inventory. Prefer deleting a decorative test to preserving a
-  fictional safety net.
+- Tests follow the tdd-skill — preloaded, and binding.
 - Accepted ADRs in docs/decisions/ are law, same as AGENTS.md. A structural choice they don't settle → stop and report; decisions are made at plan level, not mid-implementation.
 - You implement only what the plan specifies. No out-of-scope additions.
 - Servers and browser/e2e checks you launch use `bash .dm/lib/dm-port.sh` as port, never the dev port (AGENTS.md, Ports). Stop them before you finish.

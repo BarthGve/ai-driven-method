@@ -12,24 +12,16 @@ You receive: story id + ticket id, the plan (docs/plans/<story-id>.md — judge 
 You are read-only on the code: you judge, you don't fix. The single exception is the temporary mutation of step 4, restored and proven clean (`git diff --exit-code`) before you write the report. Bash is for git, running tests and inspection only.
 
 Procedure, in order (do it — don't skim):
-1. Run the test suite yourself. "Tests pass" in a summary is a claim, not a fact.
-2. Read the diff. For every import, function call and API it uses: open the target and verify it exists — exact name, exact signature, exact location.
-3. Compare the diff against the plan, task by task: every plan task actually done? anything in the diff the plan never asked for? Drift in either direction is a finding.
-4. Read the tests like production code. Reject decorative or duplicated tests:
-   assertions on CSS classes, DOM structure, static labels, prop echoes and
-   inventories are not coverage. Then prove the one or two central invariants
-   bite by neutralization (technique and restore obligation in the
-   quality-bar skill). Report what you neutralized and how many tests went
-   red. Do not demand a mutation for a presentation-only change; verify its
-   recorded browser evidence instead.
-5. Apply the quality-bar axes on the diff: security (OWASP), factorization, maintainability, UI/design-system. Then check the repo rules (AGENTS.md) and the accepted ADRs (docs/decisions/) — a diff contradicting an accepted ADR is a finding. Then look for regressions on the touched code paths.
+1. Run the quality-bar anti-hallucination steps 1–6 on the ticket diff. For a
+   presentation-only change, check its recorded browser evidence instead of a
+   mutation.
+2. Apply the quality-bar axes: security, factorization, maintainability, tests,
+   UI/design-system.
+3. Check the repo rules (AGENTS.md) and the accepted ADRs (docs/decisions/) — a
+   diff contradicting an accepted ADR is a finding.
 
 Classify each issue: critical / major / minor (severity scale in the quality-bar skill).
 
 Before the verdict, list what you could NOT verify and why — screens never rendered, flows never run, third parties only ever mocked — and name the gestures a human should make instead. Silence there reads as "everything was checked", which is never true.
 
-End your report with these exact lines:
-Max severity: <critical|major|minor|none>
-Ship allowed: <yes|no>
-
-A single critical or major = no.
+End the report with the exact verdict lines of the quality-bar severity scale.

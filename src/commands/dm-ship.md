@@ -27,7 +27,7 @@ Exit non-zero → STOP: move the child to `ready` (or it must already be `in pro
 Require `docs/product/<story-id>.md` (from `/dm-docs`). Missing → STOP: "Product doc required — run /dm-docs <story-id>."
 
 Then proceed:
-1. Without switching branches, commit `docs/reviews/<story-id>/<ticket-id>.md` on the already verified ticket branch if not already committed (the PR must carry its review). Then verify the tests pass. Failing tests → stop.
+1. Without switching branches, commit `docs/reviews/<story-id>/<ticket-id>.md` on the already verified ticket branch if not already committed (the PR must carry its review). Then run the `full` check through the witness (`bash .dm/lib/dm-witness.sh full -- <full command>`, AGENTS.md Checks): it is skipped when the reviewed content already passed. Failing tests → stop.
 2. If a PR for `feature/<story-id>/<ticket-id>` already exists, don't open a duplicate — check its state: MERGED → jump straight to the Cleanup step; OPEN → continue. Otherwise push the branch and open a clean PR from `feature/<story-id>/<ticket-id>` to **`next`** (never `main`): `gh pr create --base next --head feature/<story-id>/<ticket-id> …`. Clear title, structured description (what, why, how to test), readable diff. Include the review verdict (max severity + findings summary) in the PR body.
 3. Read the ship strategy from AGENTS.md ("Ship strategy" section). No section, or no explicit `auto` → the mode is manual.
 

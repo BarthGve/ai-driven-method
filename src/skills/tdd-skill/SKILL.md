@@ -8,8 +8,12 @@ For each behavior-bearing task in the plan:
 1. Write a failing test that describes the expected behavior.
 2. Run it and watch it fail. Not optional: a test you never saw fail proves nothing.
 3. Write the minimum code to make it pass.
-4. Run the suite. Refactor if needed, tests always green.
+4. Run the `focused` check (AGENTS.md, Checks) on the unit's test files — never the whole suite here. Refactor if needed, tests always green.
 5. Tick the task's checkbox in the plan. No commit here.
+
+Before the ticket commit, once: `bash .dm/lib/dm-witness.sh fast -- <fast command>`
+then `bash .dm/lib/dm-witness.sh full -- <full command>`. Red → fix, rerun. No
+`dm-witness.sh` in the worktree → run the commands directly and say so.
 
 A task that only changes copy, styling, spacing, responsive composition or
 other presentation with no conditional behavior does not require a synthetic
@@ -64,14 +68,15 @@ translated wording do not each need their own component test.
 Runtime is dominated by **per-file** cost — environment setup and module loading — not by the number of assertions. Measure it once on the project before optimising anything.
 
 - **One test file per unit under test, never one per behavior.** Adding a case to an existing file is nearly free; creating a file is not. Caught yourself opening a second file for the same unit? Add a group inside the first.
-- **A ticket adds at most two new test files.** Beyond that, fold the cases in. If a ticket genuinely needs more, say so in your report with the reason — it signals the ticket is too big, like a plan growing past ten tasks.
+- **Max two new test files per ticket.** Beyond that, fold the cases in. If a ticket genuinely needs more, say so in your report with the reason — it signals the ticket is too big, like a plan growing past ten tasks.
 - **The heavy environment only where it is needed.** A file that never renders anything runs in the light one.
 
 ## The acceptance criterion is the mutation, not the count
 
 Before ticking a behavior-bearing task: **neutralize the invariant you just
 protected and watch the right test go red.** Remove the guard, invert the
-condition, return early — then run. Do not invent a mutation for a visual-only
+condition, return early — then run the `focused` check on the unit's test files
+and on its callers' when a refusal witness lives there. Do not invent a mutation for a visual-only
 task; record its browser/visual evidence instead.
 
 - Nothing goes red → the test is decorative. Delete it and write the one that bites, or state in your report that this behavior is untested.
@@ -99,15 +104,8 @@ says. A presentation-only task reports visual evidence instead.
 
 ## When it goes wrong
 
+- No known test command → discover it from `package.json` scripts, `pyproject.toml` / `pytest.ini`, `Makefile` or CI config. Never invent a runner.
 - The new test passes immediately → it doesn't test the new behavior. Rewrite the test, not the code.
 - The tests can't run → stop and report. Never "skip testing just this once".
 - The test is flaky → fix the flakiness first; a flaky test guards nothing.
 - The behavior is only reachable through a replaced boundary → push the rule down into a unit you can test directly, and test it there.
-
-## Project discovery (filled)
-
-- **Test command** — discover from `package.json` scripts (`test`, `test:unit`, `vitest`, `jest`), `pyproject.toml` / `pytest.ini`, `Makefile` targets, or CI config. Prefer the project’s documented command; do not invent a runner.
-- **Never assert CSS class names** — no Tailwind tokens, breakpoint utilities, or structural class lists. Behavior and accessible contracts only; visuals via browser check.
-- **Max two new test files per ticket** — fold further cases into existing files. More than two signals the ticket is too big (same smell as a plan past ~10 tasks).
-- **Actors a rule distinguishes** — enumerate once beside the rule; each caller gets a single refusal witness, never a re-matrix.
-- **File layout** — one test file per unit under test; name after the unit; group cases inside that file.

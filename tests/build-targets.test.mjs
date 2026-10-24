@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -21,4 +21,10 @@ test("grok emit has commands, skills, agents", () => {
 test("codex emit still puts commands in skills/", () => {
   const out = emit("codex");
   assert.ok(existsSync(join(out, "skills", "dm-prd", "SKILL.md")));
+});
+
+test("codex agent-skills name the skills Claude preloads", () => {
+  const out = emit("codex");
+  const t = readFileSync(join(out, "skills", "implementer", "SKILL.md"), "utf8");
+  assert.match(t, /Load these skills first: tdd-skill, quality-bar\./);
 });
