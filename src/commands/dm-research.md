@@ -1,5 +1,5 @@
 ---
-description: Explore a story's real context before planning — current code, APIs, traps
+description: Explore a story's real context before planning — current code, APIs, traps. Use first for each story, it creates the story worktree. Not for product-wide architecture (/dm-architect).
 argument-hint: <story id or name>
 allowed-tools:
   - Read

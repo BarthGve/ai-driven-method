@@ -1,5 +1,5 @@
 ---
-description: Break a story into child tickets with size and person-day estimates
+description: Break a story into child tickets with tasks, size and person-day estimates. Use after /dm-research (and /dm-design when the story has UI). Not for writing code (/dm-execute).
 argument-hint: <story id or name>
 allowed-tools:
   - Read

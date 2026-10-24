@@ -1,6 +1,6 @@
 ---
 name: codebase-analysis
-description: Analyzes existing code you didn't write — structure, conventions, patterns. Use during the Architecture and Research phases of the driven pipeline, and for boilerplate onboarding.
+description: Analyzes existing code you didn't write — structure, conventions, patterns. Use during Architecture, Research and boilerplate onboarding. Not for reviewing a diff (quality-bar).
 ---
 # Codebase analysis
 

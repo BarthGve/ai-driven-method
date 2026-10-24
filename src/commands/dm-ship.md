@@ -1,5 +1,5 @@
 ---
-description: Open the PR into next; merge per the project's ship strategy (manual by default)
+description: Open the ticket's PR into next; merge per the project's ship strategy (manual by default). Use when the last review round says Ship allowed yes. Not for production (/dm-release).
 argument-hint: <story id> <ticket id>
 allowed-tools:
   - Read
@@ -15,7 +15,7 @@ worktree. Missing worktree, wrong branch, detached HEAD or repository base →
 STOP; never checkout the feature branch in the repository base directory.
 
 ## Step 0 — Gate (fail-closed, mechanical)
-Run: `grep -q '^Ship allowed: yes' docs/reviews/<story-id>/<ticket-id>.md`
+Run: `grep '^Ship allowed:' docs/reviews/<story-id>/<ticket-id>.md | tail -n 1 | grep -q '^Ship allowed: yes'` — the review appends rounds, only the last verdict counts.
 If the file is missing or the command fails, STOP immediately: "Ship blocked — review missing or negative. Run /dm-review <story-id> <ticket-id>." Nothing below runs without a passing gate.
 
 Board gate (child only), same as execute:

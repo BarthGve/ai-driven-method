@@ -1,5 +1,5 @@
 ---
-description: Release next → main — bump VERSION, tag, wiki per US, board shipped
+description: Release next → main — bump VERSION, tag, wiki per US, board shipped. Use when parent stories are in test. Not for shipping one ticket into next (/dm-ship).
 allowed-tools:
   - Read
   - Bash

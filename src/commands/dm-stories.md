@@ -1,5 +1,5 @@
 ---
-description: Break the PRD down into shippable, agentic-ready user stories
+description: Break the PRD down into shippable, agentic-ready user stories. Use after /dm-init, or after /dm-feature to append stories. Not for child tickets (/dm-plan).
 allowed-tools:
   - Read
   - Write

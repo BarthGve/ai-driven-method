@@ -1,5 +1,5 @@
 ---
-description: Affiche le pipeline driven — l'ordre des phases, US vs tickets
+description: Affiche le pipeline driven — l'ordre des phases, US vs tickets. À utiliser pour savoir quelle commande vient ensuite en général. Pas pour l'état réel du projet (/dm-status).
 disable-model-invocation: true
 ---
 # driven — Pipeline

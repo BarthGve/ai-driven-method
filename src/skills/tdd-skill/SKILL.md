@@ -1,6 +1,6 @@
 ---
 name: tdd-skill
-description: Test-first discipline for agentic implementation. Preloaded in the implementer subagent.
+description: Test-first discipline for agentic implementation — focused tests per task, mutation as acceptance. Use when implementing a ticket. Not for reviewing someone else's diff (quality-bar).
 ---
 # Agentic TDD
 

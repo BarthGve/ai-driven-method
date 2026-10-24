@@ -1,5 +1,5 @@
 ---
-description: Onboard an existing codebase into the driven pipeline — baseline + Issue mapping
+description: Onboard an existing codebase into the driven pipeline — baseline + Issue mapping, mutating nothing. Use when code and Issues already exist. Not for an empty repo (/dm-prd) or a new feature on a driven product (/dm-feature).
 argument-hint: (none — reads the current repo)
 allowed-tools:
   - Read

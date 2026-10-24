@@ -1,5 +1,5 @@
 ---
-description: Set the technical HOW — stack, patterns, conventions, design
+description: Set the technical HOW — stack, patterns, conventions, checks, ADRs. Use once per product, after /dm-stories-review. Not for one story's context (/dm-research) or visuals (/dm-design-system).
 allowed-tools:
   - Read
   - Glob
