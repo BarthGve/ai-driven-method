@@ -9,6 +9,7 @@
 #   issue-create-ticket <story-id> <ticket-id> <title> <body-file>
 #   require-ready <story-id>/<ticket-id>
 #   parent-sync <story-id>
+#   status-all                     → one line per driven issue: <key><TAB><status>
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
@@ -17,13 +18,30 @@ source "$SCRIPT_DIR/dm-config.sh"
 
 gh_bin() { command -v gh; }
 
+# The issue list is read once per invocation (each 100 issues cost one GraphQL point) and
+# reused by every lookup. Safe because every command reads only after its last write
+# (issue create and item-add happen before the first lookup); a command that reads, then
+# creates, then reads again must empty "$DM_ISSUES_CACHE" in between.
+DM_ISSUES_CACHE="$(mktemp)"
+trap 'rm -f "$DM_ISSUES_CACHE"' EXIT
+# ponytail: a board past this many issues is truncated with a warning; raise it if one ever is.
+DM_ISSUE_LIMIT="${DM_ISSUE_LIMIT:-5000}"
+
 issues_json() {
-  "$(gh_bin)" issue list \
-    -R "$(dm_config_repo)" \
-    --state all \
-    --limit 200 \
-    --json title,number,id,projectItems
+  if [ ! -s "$DM_ISSUES_CACHE" ]; then
+    "$(gh_bin)" issue list \
+      -R "$(dm_config_repo)" \
+      --state all \
+      --limit "$DM_ISSUE_LIMIT" \
+      --json title,number,id,projectItems >"$DM_ISSUES_CACHE"
+    node -e '
+      const n = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).length;
+      if (n >= Number(process.argv[2])) console.error("dm-board: WARNING: " + n + " issues read, the limit — older ones may be missing (raise DM_ISSUE_LIMIT)");
+    ' "$DM_ISSUES_CACHE" "$DM_ISSUE_LIMIT"
+  fi
+  cat "$DM_ISSUES_CACHE"
 }
+
 
 # Exact title key match: "[key] ..." or "[key]"
 find_issue_json() {
@@ -195,6 +213,19 @@ cmd_parent_sync() {
   printf '%s\n' "$desired"
 }
 
+cmd_status_all() {
+  dm_config_load
+  issues_json | node -e '
+    const issues = JSON.parse(require("fs").readFileSync(0, "utf8"));
+    for (const i of issues) {
+      const m = /^\[([^\]]+)\]/.exec(i.title || "");
+      if (!m) continue;
+      const st = (i.projectItems && i.projectItems[0] && i.projectItems[0].status && i.projectItems[0].status.name) || "-";
+      console.log(m[1] + "\t" + st);
+    }
+  '
+}
+
 extract_issue_number_from_url() {
   node -e '
     const u = process.argv[1];
@@ -338,8 +369,9 @@ main() {
     issue-adopt) shift; cmd_issue_adopt "$@" ;;
     require-ready) shift; cmd_require_ready "$@" ;;
     parent-sync) shift; cmd_parent_sync "$@" ;;
+    status-all) shift; cmd_status_all "$@" ;;
     *)
-      echo "usage: dm-board.sh status-get|status-set|issue-create-us|issue-create-ticket|issue-adopt|require-ready|parent-sync ..." >&2
+      echo "usage: dm-board.sh status-get|status-set|status-all|issue-create-us|issue-create-ticket|issue-adopt|require-ready|parent-sync ..." >&2
       return 1
       ;;
   esac

@@ -13,11 +13,22 @@ l'interface d'installation, le patch jamais.
 - Section `## Checks` dans `AGENTS.md` (remplie par `/dm-architect`) : `focused` pendant une
   tâche, `fast` et `full` avant le commit du ticket, `ci` jamais lancé par un agent.
 
+- `.dm/lib/dm-quota.sh` : quota GitHub restant (GraphQL et REST), sans en consommer. Le quota
+  est par compte : toutes les sessions et apps qui utilisent `gh` y puisent.
+- `dm-board.sh status-all` : le statut de toutes les issues driven en une lecture.
+
 ### Modifié
+- `dm-board.sh` lit la liste des issues une seule fois par appel (`parent-sync` en faisait
+  2 à 3). `/dm-status`, `/dm-release` et `/dm-orchestrator` lisent le board une fois avec
+  `status-all` au lieu d'un `status-get` par story ou ticket.
 - `tdd-skill` : tests ciblés à chaque tâche et pour les mutations ; suite complète une seule
   fois, avant le commit du ticket. `quality-bar` : mutations du reviewer sur les fichiers ciblés.
 - Chargement à la demande : les chemins canvas et brief de `/dm-design` passent dans
   `templates/design-path-*.md`, lus seulement quand ce chemin est choisi.
+
+### Corrigé
+- `dm-board.sh` ne lisait que 200 issues : au-delà, un ticket devenait « issue not found ».
+  Limite portée à 5000 (`DM_ISSUE_LIMIT`), avec un avertissement si elle est atteinte.
 
 ### À savoir
 - `AGENTS.md` n'est jamais écrasé : ajoute la section « Checks » à la main dans les projets existants.

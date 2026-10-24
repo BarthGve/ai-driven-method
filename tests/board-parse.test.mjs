@@ -179,6 +179,33 @@ test("parent-sync sets test when all children test/shipped", () => {
   const state = JSON.parse(readFileSync(statePath, "utf8"));
   const parent = state.issues.find((i) => i.number === 1);
   assert.equal(parent.projectItems[0].status.name, "test");
+  // Children, parent status and parent item id all come from one issue list.
+  assert.equal(state.list_calls, 1);
+});
+
+test("status-all prints every driven issue's status from one read", () => {
+  const { d, statePath, bin } = appDir([
+    { title: "[s01-x] Parent", number: 1, projectItems: [{ id: "P1", status: { optionId: "opt3", name: "in progress" } }] },
+    { title: "[s01-x/t01-a] A", number: 2, projectItems: [{ id: "P2", status: { optionId: "opt2", name: "ready" } }] },
+    { title: "[s01-x/t02-b] B", number: 3, projectItems: [] },
+    { title: "Hand-written, not driven", number: 4, projectItems: [] },
+  ]);
+  const out = runBoard(d, bin, statePath, ["status-all"]);
+  assert.equal(out, "s01-x\tin progress\ns01-x/t01-a\tready\ns01-x/t02-b\t-\n");
+  assert.equal(JSON.parse(readFileSync(statePath, "utf8")).list_calls, 1);
+});
+
+test("issue-create-ticket finds the issue it just created, in a single read", () => {
+  const { d, statePath, bin } = appDir([
+    { title: "[s01-x] Parent", number: 1, projectItems: [{ id: "P1", status: { optionId: "opt1", name: "backlog" } }] },
+  ]);
+  const body = join(d, "body.md");
+  writeFileSync(body, "x");
+  runBoard(d, bin, statePath, ["issue-create-ticket", "s01-x", "t01-a", "A", body]);
+  const state = JSON.parse(readFileSync(statePath, "utf8"));
+  // The new child got its backlog status: its project item was found after the create.
+  assert.ok(state.edits.some((e) => e.id === "PVTI_2"));
+  assert.equal(state.list_calls, 1);
 });
 
 test("init assert-status-ids passes when all five present", () => {

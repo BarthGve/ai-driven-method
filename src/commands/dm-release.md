@@ -10,7 +10,7 @@ allowed-tools:
 Work from the repository base on branch **`next`** (integration). Never release from a feature branch.
 
 ## Step 1 — Candidates
-List **parent** US Issues currently in status `test` (children already merged into `next`). Use `bash .dm/lib/dm-board.sh status-get <story-id>` for each story id in docs/stories.md; keep those whose status is exactly `test`.
+List **parent** US Issues currently in status `test` (children already merged into `next`). Run `bash .dm/lib/dm-board.sh status-all` once and, for each story id in docs/stories.md, keep those whose line says exactly `test`.
 
 No parent in `test` → STOP: "Nothing to release — ship tickets into next until their parent US reaches test."
 

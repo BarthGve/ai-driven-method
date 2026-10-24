@@ -22,7 +22,10 @@ args="$*"
 case "$args" in
   *"issue list"*)
     node -e '
-      const s=JSON.parse(require("fs").readFileSync(process.env.DM_GH_STUB_STATE,"utf8"));
+      const fs=require("fs");
+      const s=JSON.parse(fs.readFileSync(process.env.DM_GH_STUB_STATE,"utf8"));
+      s.list_calls=(s.list_calls||0)+1;
+      fs.writeFileSync(process.env.DM_GH_STUB_STATE, JSON.stringify(s,null,2));
       const issues=(s.issues||[]).map(i=>({
         title:i.title, number:i.number, id:i.id||("I_"+i.number),
         projectItems:i.projectItems||[]
