@@ -56,11 +56,15 @@ ver="$(tr -d '[:space:]' < "$wt/VERSION")"
 git -C "$wt" push origin "HEAD:refs/heads/release/v${ver}"
 git worktree remove "$wt"
 url="$(gh pr create --base next --head "release/v${ver}" --title "chore: release v${ver}" --body "Version bump for the release of v${ver}.")"
-out="$(gh pr checks "$url" --watch --fail-fast --interval 15 2>&1)" || {
+# Checks register a few seconds after the PR opens: "no checks reported" right away means
+# "not yet", and only after a minute of it "none in this repo".
+for _ in $(seq 12); do
+  out="$(gh pr checks "$url" --watch --fail-fast --interval 15 2>&1)" && break
   echo "$out" | grep -q "no checks reported" || { echo "$out"; echo "Bump PR check failed — not merged: $url"; exit 1; }
-}
+  sleep 5
+done
 ```
-"no checks reported" is not a failure (a repo without checks). Then `gh pr merge "$url" --squash --delete-branch` — this bump PR is the release
+Then `gh pr merge "$url" --squash --delete-branch` — this bump PR is the release
 gesture the user asked for.
 
 Realign: from the repository base, on `next` with no uncommitted change to `VERSION` or
