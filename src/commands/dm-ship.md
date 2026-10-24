@@ -71,10 +71,11 @@ Never clean up on the promise of a merge — only on proof:
    considers unmerged, which is every squashed branch. The safety therefore
    rests entirely on step 1 — never remove the worktree or branch without the
    `MERGED` proof.
-4. Board — child to `test`, then derive parent:
+4. Board — child to `test` (which re-derives the parent), then close the child Issue:
    ```bash
    bash .dm/lib/dm-board.sh status-set <story-id>/<ticket-id> test
+   bash .dm/lib/dm-board.sh issue-close <story-id>/<ticket-id>
    ```
-   (`status-set` on a child re-derives the parent US: `test` only when every child is `test` or `shipped`; parent never uses `ready`.)
+   (`status-set` on a child re-derives the parent US: `test` only when every child is `test` or `shipped`; parent never uses `ready`. A closed ticket counts in the story's "Sub-issues progress"; its status stays `test`. The story Issue stays open until `/dm-release`.)
 
 The content is on `next`, the audit trail is in the merged PR: the ticket branch has no further use.

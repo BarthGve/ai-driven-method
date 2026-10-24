@@ -10,6 +10,7 @@
 #   require-ready <story-id>/<ticket-id>
 #   parent-sync <story-id>          (also run by every status-set on a child)
 #   status-all                     → one line per driven issue on the board: <key><TAB><status>
+#   issue-close <issue-key>         close the Issue (ticket at ship, story at release); status untouched
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
@@ -242,6 +243,18 @@ cmd_status_all() {
   ' <<<"$list"
 }
 
+# Closing counts toward the parent's "Sub-issues progress" (closed / total). It never sets a
+# status: driven owns the status field, and /dm-init removes the board workflow "Item closed"
+# that would turn a closed ticket "shipped" while it is only on next.
+cmd_issue_close() {
+  local key="${1:-}" raw number
+  [ -n "$key" ] || { echo "usage: issue-close <issue-key>" >&2; return 1; }
+  dm_config_load
+  raw="$(find_issue_json "$key")" || { echo "dm-board: issue not found on the project board for key '$key'" >&2; return 1; }
+  number="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).number))' "$raw")"
+  "$(gh_bin)" issue close "$number" -R "$(dm_config_repo)" --reason completed >/dev/null
+}
+
 extract_issue_number_from_url() {
   node -e '
     const u = process.argv[1];
@@ -386,8 +399,9 @@ main() {
     require-ready) shift; cmd_require_ready "$@" ;;
     parent-sync) shift; cmd_parent_sync "$@" ;;
     status-all) shift; cmd_status_all "$@" ;;
+    issue-close) shift; cmd_issue_close "$@" ;;
     *)
-      echo "usage: dm-board.sh status-get|status-set|status-all|issue-create-us|issue-create-ticket|issue-adopt|require-ready|parent-sync ..." >&2
+      echo "usage: dm-board.sh status-get|status-set|status-all|issue-close|issue-create-us|issue-create-ticket|issue-adopt|require-ready|parent-sync ..." >&2
       return 1
       ;;
   esac

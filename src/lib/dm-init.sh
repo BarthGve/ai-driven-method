@@ -330,6 +330,17 @@ create_project_and_config() {
       '
   )" || die "failed to set the Status options of project ${project_number}"
 
+  # GitHub's default board workflow "Item closed" sets Status when an issue closes. driven sets
+  # every status itself and closes a ticket at ship while it is only `test`: that workflow
+  # would turn it `shipped`. Remove it (re-addable by hand in the project's Workflows).
+  local wf_id
+  wf_id="$(gh api graphql -f id="$project_id" -f query='query($id:ID!){node(id:$id){... on ProjectV2{workflows(first:20){nodes{id name}}}}}' \
+    --jq '.data.node.workflows.nodes[] | select(.name == "Item closed") | .id' 2>/dev/null || true)"
+  if [ -n "$wf_id" ]; then
+    gh api graphql -f id="$wf_id" -f query='mutation($id:ID!){deleteProjectV2Workflow(input:{workflowId:$id}){deletedWorkflowId}}' >/dev/null ||
+      warn "could not remove the board workflow 'Item closed' — remove it by hand, or a ticket closed at ship turns shipped"
+  fi
+
   # Fail closed: never write .dm/config.json with incomplete status_option_ids
   assert_status_option_ids "$status_json"
 

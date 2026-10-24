@@ -94,9 +94,11 @@ Prove merge: `gh pr view <url> --json state --jq .state` must be `MERGED`. Then:
    ```bash
    bash .dm/lib/dm-wiki.sh publish "$(pwd)" "$(cat VERSION)" <story-id...>
    ```
-3. Board — for **every** child of each released parent (the parent follows: it turns `shipped` with its last child):
+3. Board — for **every** child of each released parent (the parent follows: it turns `shipped` with its last child), then close the story Issue:
    ```bash
    bash .dm/lib/dm-board.sh status-set <story-id>/<ticket-id> shipped
+   bash .dm/lib/dm-board.sh issue-close <story-id>
    ```
+   Children were closed at `/dm-ship`; one still open (shipped before this rule) → `issue-close` it too.
 
 End with: "Released vX.Y.Z — wiki updated, board shipped." or the open PR URL if still awaiting merge.

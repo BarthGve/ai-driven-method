@@ -477,6 +477,8 @@ printf '%s\\n' "$*" >> "${log}"
 case "$*" in
   *"project create"*) echo '{"id":"PVT_new","number":7}' ;;
   *"project field-list"*) echo '{"fields":[{"id":"F_title","name":"Title","type":"ProjectV2Field"},{"id":"F_status","name":"Status","type":"ProjectV2SingleSelectField","options":[{"id":"o","name":"Todo"}]}]}' ;;
+  *"workflows(first"*) echo 'W_closed' ;;
+  *"deleteProjectV2Workflow"*) echo '{}' ;;
   *"api graphql"*) echo '{"data":{"updateProjectV2Field":{"projectV2Field":{"options":[{"id":"b","name":"backlog"},{"id":"r","name":"ready"},{"id":"p","name":"in progress"},{"id":"t","name":"test"},{"id":"s","name":"shipped"}]}}}}' ;;
   *"project link"*) ;;
   *) echo "unhandled: $*" >&2; exit 98 ;;
@@ -495,6 +497,8 @@ esac
   assert.doesNotMatch(calls, /field-create/);
   assert.match(calls, /updateProjectV2Field\(input:\{fieldId:\$field/);
   assert.match(calls, /field=F_status/);
+  // the "Item closed" board workflow would turn a ticket closed at ship `shipped`: removed
+  assert.match(calls, /deleteProjectV2Workflow[\s\S]*id=W_closed|id=W_closed[\s\S]*deleteProjectV2Workflow/);
 });
 
 test("a child's status-set moves its parent US, from one board read", () => {
@@ -516,4 +520,16 @@ test("a child's status-set moves its parent US, from one board read", () => {
   const last = family("shipped");
   runBoard(last.d, last.bin, last.statePath, ["status-set", "s01-x/t01-a", "shipped"]);
   assert.equal(parentOf(last.statePath), "shipped");
+});
+
+test("issue-close closes the ticket's Issue and leaves its status alone", () => {
+  const { d, statePath, bin } = appDir([
+    { title: "[s01-x] Parent", number: 1, projectItems: [{ id: "P1", status: { optionId: "opt3", name: "in progress" } }] },
+    { title: "[s01-x/t01-a] A", number: 2, projectItems: [{ id: "P2", status: { optionId: "opt4", name: "test" } }] },
+  ]);
+  runBoard(d, bin, statePath, ["issue-close", "s01-x/t01-a"]);
+  const st = JSON.parse(readFileSync(statePath, "utf8"));
+  assert.equal(st.issues.find((i) => i.number === 2).state, "CLOSED");
+  assert.equal(st.issues.find((i) => i.number === 1).state, undefined);
+  assert.equal(st.edits.length, 0);
 });
