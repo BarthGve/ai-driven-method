@@ -23,6 +23,10 @@ l'interface d'installation, le patch jamais.
   Deux tickets en parallèle ne verrouillent ni ne vident plus la même base de test.
 
 ### Modifié
+- `/dm-init` utilise le champ `Status` natif du Project : ses options (Todo, In Progress,
+  Done) sont remplacées par `backlog | ready | in progress | test | shipped`. Il ne crée plus
+  de champ « DM Status ». Les projets existants qui en ont un continuent de fonctionner :
+  `dm-board.sh` lit le champ indiqué par `status_field_id`.
 - `AGENTS.md` réduit à ce qui sert à chaque session (139 → 68 lignes, ~1 700 → ~600 mots) :
   règle absolue, Quick Fix, branches et dossiers, ids, stratégie de ship, conventions,
   Checks. Le reste vit dans la commande ou l'agent qui l'applique (ports et design system
@@ -46,12 +50,6 @@ l'interface d'installation, le patch jamais.
   fois, avant le commit du ticket. `quality-bar` : mutations du reviewer sur les fichiers ciblés.
 - Chargement à la demande : les chemins canvas et brief de `/dm-design` passent dans
   `templates/design-path-*.md`, lus seulement quand ce chemin est choisi.
-
-### Modifié (board)
-- `/dm-init` utilise le champ `Status` natif du Project : ses options (Todo, In Progress,
-  Done) sont remplacées par `backlog | ready | in progress | test | shipped`. Il ne crée plus
-  de champ « DM Status ». Les projets existants qui en ont un continuent de fonctionner :
-  `dm-board.sh` lit le champ indiqué par `status_field_id`.
 
 ### Corrigé
 - `dm-board.sh` lit le statut dans le Project configuré (`project_id`) et sur le champ
