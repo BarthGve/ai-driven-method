@@ -31,7 +31,7 @@
 - [ ] Design system respected — components/tokens from docs/design-system.md, screen matches the intent of docs/designs/<id>.md (UI stories)
 
 ## Tests
-- [ ] Test suite run by the reviewer, passing
+- [ ] `full` check run by the reviewer through the witness, passing (hit or fresh run — say which)
 - [ ] Assertions pin the acceptance criteria (no assertion-free tests)
 - [ ] Bite proven by neutralization: <what was neutralized> → <N> tests red, restored (`git diff --exit-code` clean)
 - [ ] Tests the ticket made redundant are named and removed — or their absence justified

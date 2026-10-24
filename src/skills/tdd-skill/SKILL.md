@@ -8,8 +8,12 @@ For each behavior-bearing task in the plan:
 1. Write a failing test that describes the expected behavior.
 2. Run it and watch it fail. Not optional: a test you never saw fail proves nothing.
 3. Write the minimum code to make it pass.
-4. Run the suite. Refactor if needed, tests always green.
+4. Run the `focused` check (AGENTS.md, Checks) on the unit's test files — never the whole suite here. Refactor if needed, tests always green.
 5. Tick the task's checkbox in the plan. No commit here.
+
+Before the ticket commit, once: `bash .dm/lib/dm-witness.sh fast -- <fast command>`
+then `bash .dm/lib/dm-witness.sh full -- <full command>`. Red → fix, rerun. No
+`dm-witness.sh` in the worktree → run the commands directly and say so.
 
 A task that only changes copy, styling, spacing, responsive composition or
 other presentation with no conditional behavior does not require a synthetic
@@ -71,7 +75,8 @@ Runtime is dominated by **per-file** cost — environment setup and module loadi
 
 Before ticking a behavior-bearing task: **neutralize the invariant you just
 protected and watch the right test go red.** Remove the guard, invert the
-condition, return early — then run. Do not invent a mutation for a visual-only
+condition, return early — then run the `focused` check on the unit's test files
+and on its callers' when a refusal witness lives there. Do not invent a mutation for a visual-only
 task; record its browser/visual evidence instead.
 
 - Nothing goes red → the test is decorative. Delete it and write the one that bites, or state in your report that this behavior is untested.

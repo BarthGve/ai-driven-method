@@ -111,6 +111,20 @@ All pipeline data lives in markdown files under docs/, versioned by git. No data
 ## Technical conventions
 << IP Mike: boilerplate structure, stack, patterns, naming, commit rules. >>
 
+## Checks
+Filled by `/dm-architect` with the project's real commands, nothing aspirational.
+
+| Tier | When | Command |
+| --- | --- | --- |
+| focused | during a task, mutations | << run given test files, e.g. `npx vitest run <files>` >> |
+| fast | before the ticket commit | << lint + typecheck >> |
+| full | before the ticket commit, review, ship | << whole test suite >> |
+| ci | CI only, never run by an agent | << coverage, full mutation, build, e2e suite >> |
+
+- `focused` runs only the test files of the unit at hand, never the whole suite.
+- `fast` and `full` always go through the witness, which skips a check this exact content already passed: `bash .dm/lib/dm-witness.sh full -- <full command>`. No `.dm/lib/dm-witness.sh` in the worktree (branch older than the script) → run the command directly and say so.
+- Missing section or placeholder → discover the commands (`package.json`, `pyproject.toml`, `Makefile`, CI config). Never invent a runner.
+
 ## Definition of Done (per ticket / release)
 - Ticket: single PR into `next`, structured description, readable diff, passing tests, review passed (no open critical or major), merged to `next`
 - Release: `next` → `main`, version bumped, deployed to production

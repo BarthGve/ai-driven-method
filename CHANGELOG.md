@@ -4,6 +4,30 @@ Toutes les versions notables de driven. Format [Keep a Changelog](https://keepac
 versionnage [SemVer](https://semver.org/lang/fr/). Pré-1.0 : le mineur peut casser
 l'interface d'installation, le patch jamais.
 
+## Non publié
+
+### Ajouté
+- `.dm/lib/dm-witness.sh <nom> -- <commande>` : saute un contrôle déjà passé par ce contenu
+  exact (fichiers suivis et non ignorés ; `docs/reviews` et `docs/plans` exclus). La revue
+  et `/dm-ship` ne relancent plus la suite complète quand le code n'a pas bougé.
+- Section `## Checks` dans `AGENTS.md` (remplie par `/dm-architect`) : `focused` pendant une
+  tâche, `fast` et `full` avant le commit du ticket, `ci` jamais lancé par un agent.
+
+### Modifié
+- `tdd-skill` : tests ciblés à chaque tâche et pour les mutations ; suite complète une seule
+  fois, avant le commit du ticket. `quality-bar` : mutations du reviewer sur les fichiers ciblés.
+- Chargement à la demande : les chemins canvas et brief de `/dm-design` passent dans
+  `templates/design-path-*.md`, lus seulement quand ce chemin est choisi.
+
+### À savoir
+- `AGENTS.md` n'est jamais écrasé : ajoute la section « Checks » à la main dans les projets existants.
+- `dm-witness.sh` n'est pas dans `--permissions` : il exécute la commande qu'on lui passe,
+  l'autoriser reviendrait à autoriser n'importe quelle commande.
+  Une règle `Bash(npm test:*)` ne couvre plus l'appel : autorise la commande exacte, par
+  exemple `Bash(bash .dm/lib/dm-witness.sh full -- npm test)`.
+- Le gain n'arrive dans un projet existant qu'une fois `.dm/lib` à jour commité sur `next` ;
+  sans le script, les agents lancent la commande directement.
+
 ## 0.6.0 — 2026-10-08
 
 ### Ajouté
