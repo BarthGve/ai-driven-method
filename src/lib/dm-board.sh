@@ -8,7 +8,7 @@
 #   issue-create-us <story-id> <title> <body-file>
 #   issue-create-ticket <story-id> <ticket-id> <title> <body-file>
 #   require-ready <story-id>/<ticket-id>
-#   parent-sync <story-id>
+#   parent-sync <story-id>          (also run by every status-set on a child)
 #   status-all                     → one line per driven issue on the board: <key><TAB><status>
 set -euo pipefail
 
@@ -144,6 +144,18 @@ cmd_status_set() {
     --field-id "$DM_STATUS_FIELD_ID" \
     --single-select-option-id "$option_id" \
     >/dev/null
+  # The cached board must show this write: the parent derivation below reads it.
+  node -e '
+    const fs = require("fs");
+    const items = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    for (const i of items) if (i.item_id === process.argv[2]) i.status = process.argv[3];
+    fs.writeFileSync(process.argv[1], JSON.stringify(items));
+  ' "$DM_ITEMS_CACHE" "$item_id" "$status"
+  # A child's move is the parent's move: derive the US from its tickets now, not at ship only.
+  case "$key" in
+    */*) cmd_parent_sync "${key%%/*}" >/dev/null ||
+      echo "dm-board: WARNING: '$key' set to '$status', but its parent US was not re-derived (rerun parent-sync ${key%%/*})" >&2 ;;
+  esac
 }
 
 cmd_require_ready() {
@@ -182,7 +194,7 @@ derive_parent_status() {
     const any = (set) => lines.some((s) => set.has(s));
     if (all(new Set(["shipped"]))) process.stdout.write("shipped");
     else if (all(new Set(["test", "shipped"]))) process.stdout.write("test");
-    else if (any(new Set(["in progress", "test", "shipped"]))) process.stdout.write("in progress");
+    else if (any(new Set(["ready", "in progress", "test", "shipped"]))) process.stdout.write("in progress");
     else process.stdout.write("backlog");
   '
 }

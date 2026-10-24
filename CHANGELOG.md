@@ -23,6 +23,12 @@ l'interface d'installation, le patch jamais.
   Deux tickets en parallèle ne verrouillent ni ne vident plus la même base de test.
 
 ### Modifié
+- L'US suit ses tickets : chaque `status-set` sur un ticket recalcule son US, dans la même
+  lecture du board. Avant, seul `/dm-ship` le faisait, et l'US restait en `backlog` pendant
+  que ses tickets avançaient. Un ticket `ready` compte désormais : l'US passe `in progress`.
+  `/dm-status` signale une US décalée (ticket déplacé à la main sur GitHub) et donne la
+  commande `parent-sync`. `/dm-release` ne pose plus l'US à la main : elle passe `shipped`
+  avec son dernier ticket.
 - `/dm-init` utilise le champ `Status` natif du Project : ses options (Todo, In Progress,
   Done) sont remplacées par `backlog | ready | in progress | test | shipped`. Il ne crée plus
   de champ « DM Status ». Les projets existants qui en ont un continuent de fonctionner :

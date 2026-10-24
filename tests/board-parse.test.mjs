@@ -496,3 +496,24 @@ esac
   assert.match(calls, /updateProjectV2Field\(input:\{fieldId:\$field/);
   assert.match(calls, /field=F_status/);
 });
+
+test("a child's status-set moves its parent US, from one board read", () => {
+  const family = (childStatus) => appDir([
+    { title: "[s01-x] Parent", number: 1, projectItems: [{ id: "P1", status: { optionId: "opt1", name: "backlog" } }] },
+    { title: "[s01-x/t01-a] A", number: 2, projectItems: [{ id: "P2", status: { optionId: "opt1", name: "backlog" } }] },
+    { title: "[s01-x/t02-b] B", number: 3, projectItems: [{ id: "P3", status: { optionId: "opt1", name: childStatus } }] },
+    { title: "[s02-y] Other", number: 4, projectItems: [{ id: "P4", status: { optionId: "opt1", name: "backlog" } }] },
+  ]);
+  const parentOf = (statePath, n = 1) =>
+    JSON.parse(readFileSync(statePath, "utf8")).issues.find((i) => i.number === n).projectItems[0].status.name;
+
+  const ready = family("backlog");
+  runBoard(ready.d, ready.bin, ready.statePath, ["status-set", "s01-x/t01-a", "ready"]);
+  assert.equal(parentOf(ready.statePath), "in progress");
+  assert.equal(parentOf(ready.statePath, 4), "backlog");
+  assert.equal(JSON.parse(readFileSync(ready.statePath, "utf8")).list_calls, 1);
+
+  const last = family("shipped");
+  runBoard(last.d, last.bin, last.statePath, ["status-set", "s01-x/t01-a", "shipped"]);
+  assert.equal(parentOf(last.statePath), "shipped");
+});

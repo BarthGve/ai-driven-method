@@ -17,6 +17,7 @@ Derive the state from the files and the board — never guess. Bash is for read-
    - research / design / plan (`validated: yes`?) / product doc `docs/product/<id>.md`
    - from the plan: total person-days (sum of `estimate:`) and size mix (count of XS–XL)
    - remaining person-days: sum of the estimates of children not yet `test`/`shipped` (no actuals)
+   - drift: the parent's column differs from what its children give (all `shipped` → shipped; all `test`/`shipped` → test; any child past `backlog` → in progress; else backlog) — a ticket was moved by hand on the board. Flag it and give `bash .dm/lib/dm-board.sh parent-sync <id>` as the fix.
 3. Tickets (children): for each `t*` in docs/plans/<id>.md:
    - board column: the `<story-id>/<ticket-id>` line of `status-all`
    - size, estimate

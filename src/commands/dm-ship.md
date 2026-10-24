@@ -58,8 +58,7 @@ Never clean up on the promise of a merge — only on proof:
 4. Board — child to `test`, then derive parent:
    ```bash
    bash .dm/lib/dm-board.sh status-set <story-id>/<ticket-id> test
-   bash .dm/lib/dm-board.sh parent-sync <story-id>
    ```
-   (`parent-sync` moves the parent US to `test` only when every child is `test` or `shipped`; parent never uses `ready`.)
+   (`status-set` on a child re-derives the parent US: `test` only when every child is `test` or `shipped`; parent never uses `ready`.)
 
 The content is on `next`, the audit trail is in the merged PR: the ticket branch has no further use.

@@ -123,7 +123,7 @@ mockup are.
 
 **/dm-review** — `reviewer` + `quality-bar` skill. Diff is `git diff next...feature/<story>/<ticket>`. Ends with `Max severity: …` and `Ship allowed: yes|no`. **A single critical or major = Ship allowed: no.**
 
-**/dm-ship** — greps `Ship allowed: yes`, opens PR into **`next`**. After a proven merge: child → `test`, `parent-sync`.
+**/dm-ship** — greps `Ship allowed: yes`, opens PR into **`next`**. After a proven merge: child → `test`.
 
 ### Production
 
