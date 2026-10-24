@@ -178,6 +178,8 @@ test("release bumps through a PR into protected next, never a direct push", () =
   assert.match(t, /HEAD:refs\/heads\/release\/v\$\{ver\}/);
   assert.match(t, /gh pr create --base next --head "release\/v\$\{ver\}"/);
   assert.match(t, /no checks reported/);
+  // checks register after the PR opens: "no checks reported" is retried, not taken as "none" at once
+  assert.match(t, /for _ in \$\(seq \d+\)[\s\S]*no checks reported[\s\S]*sleep/);
   assert.doesNotMatch(t, /git push origin next\b(?!:)/);
   assert.doesNotMatch(t, /Push `next`/);
   assert.doesNotMatch(t, /reset --hard/);
