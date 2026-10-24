@@ -12,12 +12,19 @@ l'interface d'installation, le patch jamais.
   et `/dm-ship` ne relancent plus la suite complète quand le code n'a pas bougé.
 - Section `## Checks` dans `AGENTS.md` (remplie par `/dm-architect`) : `focused` pendant une
   tâche, `fast` et `full` avant le commit du ticket, `ci` jamais lancé par un agent.
-
 - `.dm/lib/dm-quota.sh` : quota GitHub restant (GraphQL et REST), sans en consommer. Le quota
   est par compte : toutes les sessions et apps qui utilisent `gh` y puisent.
 - `dm-board.sh status-all` : le statut de toutes les issues driven en une lecture.
+- `tests/references.test.mjs` : échoue si la prose cite un template, un script `.dm/lib`,
+  une commande `/dm-*`, un agent ou un skill qui n'existe pas.
 
 ### Modifié
+- Revue en rounds : chaque `/dm-review` ajoute un `## Round <n>` à
+  `docs/reviews/<story>/<ticket>.md` sans réécrire les précédents ; le round suivant vérifie
+  que chaque constat critique ou majeur est corrigé. `dm-gate.sh`, `/dm-ship`, `/dm-execute`
+  et `/dm-status` lisent le **dernier** verdict.
+- Descriptions des commandes, skills et agents : « Use when… / Not for… », pour que Codex
+  déclenche le bon skill et renvoie vers la commande voisine.
 - `dm-board.sh` lit la liste des issues une seule fois par appel (`parent-sync` en faisait
   2 à 3). `/dm-status`, `/dm-release` et `/dm-orchestrator` lisent le board une fois avec
   `status-all` au lieu d'un `status-get` par story ou ticket.
@@ -31,6 +38,9 @@ l'interface d'installation, le patch jamais.
   Limite portée à 5000 (`DM_ISSUE_LIMIT`), avec un avertissement si elle est atteinte.
 
 ### À savoir
+- Revues existantes : un fichier sans `## Round` reste lu (dernier `Ship allowed:`) ; le
+  prochain `/dm-review` y ajoute le round 2. Relance `./install.sh --hooks` : les anciens
+  hooks de `.dm-hooks/` acceptent n'importe quel `Ship allowed: yes` du fichier, même suivi d'un `no`.
 - `AGENTS.md` n'est jamais écrasé : ajoute la section « Checks » à la main dans les projets existants.
 - `dm-witness.sh` n'est pas dans `--permissions` : il exécute la commande qu'on lui passe,
   l'autoriser reviendrait à autoriser n'importe quelle commande.

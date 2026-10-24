@@ -1,5 +1,5 @@
 ---
-description: Bootstrap the app repo — remote, next/main, Project board, wiki, VERSION
+description: Bootstrap the app repo — remote, next/main, Project board, wiki, VERSION. Use once, right after /dm-prd. Not for re-installing driven or onboarding existing code (/dm-continue).
 allowed-tools:
   - Read
   - Bash

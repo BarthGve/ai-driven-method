@@ -153,6 +153,32 @@ test("ship-allowed accepts ticket review path", () => {
   assert.equal(runGate(d, ["ship-allowed", "s01-x/t01-y"]), "");
 });
 
+// Reviews append rounds: only the last verdict may open or close the gate.
+const ROUNDS_NO_THEN_YES = "## Round 1\nShip allowed: no\n## Round 2\nShip allowed: yes\n";
+const ROUNDS_YES_THEN_NO = "## Round 1\nShip allowed: yes\n## Round 2\nShip allowed: no\n";
+
+function withReview(body) {
+  const d = repo();
+  mkdirSync(join(d, "docs/reviews/s01-x"), { recursive: true });
+  writeFileSync(join(d, "docs/reviews/s01-x/t01-y.md"), body);
+  return d;
+}
+
+test("ship-allowed reads the last round's verdict", () => {
+  assert.equal(runGate(withReview(ROUNDS_NO_THEN_YES), ["ship-allowed", "s01-x/t01-y"]), "");
+  assert.throws(() => runGate(withReview(ROUNDS_YES_THEN_NO), ["ship-allowed", "s01-x/t01-y"]));
+});
+
+test("dm-ship's own gate command reads the last round's verdict", () => {
+  const cmd = readFileSync(join(ROOT, "src/commands/dm-ship.md"), "utf8")
+    .match(/Run: `(grep [^`]+)`/)[1]
+    .replace(/<story-id>/g, "s01-x")
+    .replace(/<ticket-id>/g, "t01-y");
+  const gate = (d) => execSync(cmd, { cwd: d, shell: "/bin/bash", stdio: "pipe" });
+  gate(withReview(ROUNDS_NO_THEN_YES));
+  assert.throws(() => gate(withReview(ROUNDS_YES_THEN_NO)));
+});
+
 test("default-integration-branch prints next", () => {
   const d = repo();
   const out = runGate(d, ["default-integration-branch"]).trim();

@@ -1,5 +1,5 @@
 ---
-description: Add a feature to a shipped product — frame it, amend the PRD, append stories
+description: Add a feature to a shipped product — frame it, amend the PRD, append stories. Use after v1 when a new need arrives. Not for the first PRD (/dm-prd) or a bug in an existing story.
 argument-hint: <feature slug or short description>
 allowed-tools:
   - Read

@@ -1,6 +1,6 @@
 ---
 name: quality-bar
-description: Security, factorization, maintainability, anti-hallucination, and severity thresholds for implementer and reviewer. Blocks ship on critical or major.
+description: Security, factorization, maintainability, anti-hallucination and severity thresholds; blocks ship on critical or major. Use when implementing or reviewing a ticket. Not for reviewing stories (stories-review).
 ---
 # Quality bar
 

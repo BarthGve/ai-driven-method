@@ -1,5 +1,5 @@
 ---
-description: Conduct story framing or one ticket cycle — checkpoints kept
+description: Conduct story framing or one ticket cycle end to end, human checkpoints kept. Use to chain the phases of one story or one ticket. Not for a single phase (run its command) or a release.
 argument-hint: <story id> [ticket id]
 allowed-tools:
   - Read
@@ -64,7 +64,7 @@ Worktree: `.worktrees/<story-id>/<ticket-id>` on `feature/<story-id>/<ticket-id>
 Same as `/dm-execute`: `status-set … "in progress"`, delegate `implementer` for that ticket only.
 
 ### Phase 2 — Review
-Same as `/dm-review` for `<story-id> <ticket-id>`. Gate: `Ship allowed: no` → fix loop via execute (max 2).
+Same as `/dm-review` for `<story-id> <ticket-id>`. Gate: last round `Ship allowed: no` → fix loop via execute (max 2), each review appending a round.
 
 ### Phase 3 — Ship checkpoint
 AskUserQuestion: "Ship now?" — Ship / Not now. Only explicit Ship runs `/dm-ship` (PR `--base next`; after MERGED: `status-set … test` + `parent-sync`).

@@ -1,5 +1,5 @@
 ---
-description: Write the user-facing product page for a story (wiki input). No wiki push.
+description: Write the user-facing product page for a story (wiki input, no wiki push). Use after /dm-plan, before any ticket ships. Not for the wiki publish (/dm-release).
 argument-hint: <story id or name>
 allowed-tools:
   - Read
