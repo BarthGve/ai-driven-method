@@ -43,7 +43,7 @@ Follow `/dm-plan`: tickets with `size` (XS–XL) and `estimate` (0.5 steps). Ask
 Follow `/dm-docs`: write docs/product/<id>.md. **No wiki push. No `require-ready`.**
 
 ### Phase 5 — Hand-off
-List child tickets still in `backlog` (from the plan + `bash .dm/lib/dm-board.sh status-get <story>/<ticket>` when config exists). Tell the user to move the next ticket to `ready`, then run `/dm-orchestrator <story> <ticket>` (or `/dm-execute`).
+List child tickets still in `backlog` (from the plan + one `bash .dm/lib/dm-board.sh status-all` when config exists). Tell the user to move the next ticket to `ready`, then run `/dm-orchestrator <story> <ticket>` (or `/dm-execute`).
 
 End with the backlog ticket list — do **not** start execute in Mode A.
 
