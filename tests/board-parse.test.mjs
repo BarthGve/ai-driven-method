@@ -462,3 +462,37 @@ test("config values are never executed by the shell, and quotes survive", () => 
   assert.equal(existsSync(pwned), false);
   assert.equal(out, `${cfg.repo}|it's`);
 });
+
+test("dm-init sets the five statuses on the project's built-in Status field, no extra field", () => {
+  const d = mkdtempSync(join(tmpdir(), "init-"));
+  const git = (...a) => execFileSync("git", a, { cwd: d, stdio: "pipe" });
+  git("init", "-q", "-b", "main");
+  git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-q", "--allow-empty", "-m", "init");
+  const bin = join(d, "bin");
+  mkdirSync(bin);
+  const log = join(d, "gh.log");
+  // Records every call; answers the project calls dm-init makes.
+  writeFileSync(join(bin, "gh"), `#!/bin/sh
+printf '%s\\n' "$*" >> "${log}"
+case "$*" in
+  *"project create"*) echo '{"id":"PVT_new","number":7}' ;;
+  *"project field-list"*) echo '{"fields":[{"id":"F_title","name":"Title","type":"ProjectV2Field"},{"id":"F_status","name":"Status","type":"ProjectV2SingleSelectField","options":[{"id":"o","name":"Todo"}]}]}' ;;
+  *"api graphql"*) echo '{"data":{"updateProjectV2Field":{"projectV2Field":{"options":[{"id":"b","name":"backlog"},{"id":"r","name":"ready"},{"id":"p","name":"in progress"},{"id":"t","name":"test"},{"id":"s","name":"shipped"}]}}}}' ;;
+  *"project link"*) ;;
+  *) echo "unhandled: $*" >&2; exit 98 ;;
+esac
+`);
+  chmodSync(join(bin, "gh"), 0o755);
+  execFileSync("bash", [INIT, "run", "--no-remote", "--yes", "--owner", "acme", "--repo", "app"], {
+    cwd: d,
+    stdio: "pipe",
+    env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@t", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@t" },
+  });
+  const cfg = JSON.parse(readFileSync(join(d, ".dm/config.json"), "utf8"));
+  assert.equal(cfg.status_field_id, "F_status");
+  assert.deepEqual(cfg.status_option_ids, { backlog: "b", ready: "r", "in progress": "p", test: "t", shipped: "s" });
+  const calls = readFileSync(log, "utf8");
+  assert.doesNotMatch(calls, /field-create/);
+  assert.match(calls, /updateProjectV2Field\(input:\{fieldId:\$field/);
+  assert.match(calls, /field=F_status/);
+});

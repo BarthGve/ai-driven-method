@@ -47,6 +47,12 @@ l'interface d'installation, le patch jamais.
 - Chargement à la demande : les chemins canvas et brief de `/dm-design` passent dans
   `templates/design-path-*.md`, lus seulement quand ce chemin est choisi.
 
+### Modifié (board)
+- `/dm-init` utilise le champ `Status` natif du Project : ses options (Todo, In Progress,
+  Done) sont remplacées par `backlog | ready | in progress | test | shipped`. Il ne crée plus
+  de champ « DM Status ». Les projets existants qui en ont un continuent de fonctionner :
+  `dm-board.sh` lit le champ indiqué par `status_field_id`.
+
 ### Corrigé
 - `dm-board.sh` lit le statut dans le Project configuré (`project_id`) et sur le champ
   configuré (`status_field_id`). Il prenait le premier Project de l'issue et son champ
