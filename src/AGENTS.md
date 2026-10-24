@@ -71,6 +71,13 @@ developer's dev port (3000, 5173, 8080…). Get yours with `bash .dm/lib/dm-port
 (stable per worktree, 20000-29999) and pass it to the tool (`PORT=$(bash .dm/lib/dm-port.sh) npm run dev`,
 `--port`, or the test config's baseURL). Stop what you started before you finish.
 
+Test services: tests in a ticket worktree never share a stateful service with
+another worktree or with the developer's environment — database, schema, Redis
+db index, queue or bucket prefix. Two `full` runs on one test database lock and
+wipe each other: flaky reds, then reruns. The `isolation` row of Checks gives
+the recipe; `worktree-manager` applies it when it creates a ticket worktree,
+and `/dm-ship` runs its teardown before removing the worktree.
+
 One agent, one working directory. While an agent owns a directory, no second
 agent and no main context may edit, checkout or stash in it.
 
@@ -120,8 +127,10 @@ Filled by `/dm-architect` with the project's real commands, nothing aspirational
 | fast | before the ticket commit | << lint + typecheck >> |
 | full | before the ticket commit, review, ship | << whole test suite >> |
 | ci | CI only, never run by an agent | << coverage, full mutation, build, e2e suite >> |
+| isolation | ticket worktree creation; teardown at ship cleanup | << per-worktree test services, e.g. `DATABASE_URL=…/app_test_$(bash .dm/lib/dm-port.sh)` in `.env.test.local`, then the create/migrate command; teardown: the drop command. `none` when tests use no stateful service >> |
 
 - `focused` runs only the test files of the unit at hand, never the whole suite.
+- `isolation` names derive from `dm-port.sh` run inside the worktree: stable per worktree, distinct across worktrees. The overrides go to a file the test runner loads and git ignores (`.env.test.local`, or the framework's equivalent), never to a tracked file.
 - `fast` and `full` always go through the witness, which skips a check this exact content already passed: `bash .dm/lib/dm-witness.sh full -- <full command>`. No `.dm/lib/dm-witness.sh` in the worktree (branch older than the script) → run the command directly and say so.
 - Missing section or placeholder → discover the commands (`package.json`, `pyproject.toml`, `Makefile`, CI config). Never invent a runner.
 

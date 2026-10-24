@@ -14,6 +14,10 @@ For each behavior-bearing task in the plan:
 Before the ticket commit, once: `bash .dm/lib/dm-witness.sh fast -- <fast command>`
 then `bash .dm/lib/dm-witness.sh full -- <full command>`. Red → fix, rerun. No
 `dm-witness.sh` in the worktree → run the commands directly and say so.
+A `NOT stamped` warning means the check wrote files git sees: review and ship
+would rerun it in full. Add the generated paths it names to `.gitignore` in
+this ticket's commit, rerun until stamped, and declare it as a deviation. A
+source file the check rewrote (formatter, snapshot) is a blocker to report.
 
 A task that only changes copy, styling, spacing, responsive composition or
 other presentation with no conditional behavior does not require a synthetic
