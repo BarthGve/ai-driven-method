@@ -17,8 +17,16 @@ l'interface d'installation, le patch jamais.
 - `dm-board.sh status-all` : le statut de toutes les issues driven en une lecture.
 - `tests/references.test.mjs` : échoue si la prose cite un template, un script `.dm/lib`,
   une commande `/dm-*`, un agent ou un skill qui n'existe pas.
+- Ligne `isolation` dans `## Checks` (remplie par `/dm-architect`) : base, schéma, index
+  Redis ou préfixe de file propres à chaque worktree de ticket, nommés d'après `dm-port.sh`.
+  `worktree-manager` l'applique à la création, `/dm-ship` lance le teardown au nettoyage.
+  Deux tickets en parallèle ne verrouillent ni ne vident plus la même base de test.
 
 ### Modifié
+- `dm-witness.sh` nomme les fichiers que la commande a modifiés quand il n'enregistre pas
+  le passage (`coverage/`, `test-results/`…). Sans ce tampon, la revue et `/dm-ship`
+  relançaient la suite complète. L'implementer les ajoute au `.gitignore`, le reviewer en
+  fait un constat mineur.
 - Revue en rounds : chaque `/dm-review` ajoute un `## Round <n>` à
   `docs/reviews/<story>/<ticket>.md` sans réécrire les précédents ; le round suivant vérifie
   que chaque constat critique ou majeur est corrigé. `dm-gate.sh`, `/dm-ship`, `/dm-execute`

@@ -80,8 +80,19 @@ test("a failure keeps its exit code and leaves no stamp", () => {
 test("content changed during the run is not stamped", () => {
   const { d } = repo();
   const r = witness(d, "echo run >> runs.log; echo changed > a.js");
-  assert.match(r.stderr, /not stamped/);
+  assert.match(r.stderr, /NOT stamped/);
+  assert.match(r.stderr, /^  a\.js$/m);
   witness(d, "echo run >> runs.log");
+  assert.equal(runs(d), 2);
+});
+
+test("an output file the run creates is named, and ignoring it restores the hit", () => {
+  const { d } = repo();
+  const cmd = "echo run >> runs.log; mkdir -p coverage; echo x > coverage/lcov.info";
+  assert.match(witness(d, cmd).stderr, /^  coverage\/lcov\.info$/m);
+  writeFileSync(join(d, ".gitignore"), "runs.log\nnode_modules/\ncoverage/\n");
+  witness(d, cmd);
+  assert.match(witness(d, cmd).stdout, /skipped 'full'/);
   assert.equal(runs(d), 2);
 });
 

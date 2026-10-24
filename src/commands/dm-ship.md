@@ -45,7 +45,7 @@ Never clean up on the promise of a merge — only on proof:
 1. Verify: `gh pr view feature/<story-id>/<ticket-id> --json state,mergedAt --jq '.state'` must return exactly `MERGED`. An OPEN PR, a closed-unmerged PR, or an "about to be merged" does NOT qualify: skip cleanup entirely.
 
    Do NOT use `git merge-base --is-ancestor` here: a squash merge rewrites the work into a new commit, so the branch's commits are never ancestors of `next`. The check would fail on every correctly merged ticket and no branch would ever be cleaned up.
-2. Verify the dedicated ticket worktree is clean, then remove that exact worktree with
+2. Verify the dedicated ticket worktree is clean. Run the `isolation` teardown of the AGENTS.md Checks table from inside it, when one is recorded (a failure is reported, not blocking). Then remove that exact worktree with
    `git worktree remove <repository-base>/.worktrees/<story-id>/<ticket-id>`. A dirty worktree is
    a hard stop; never use `--force`.
 3. Only after the worktree is gone, delete the branch, local and remote:

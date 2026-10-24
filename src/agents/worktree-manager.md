@@ -36,6 +36,12 @@ Procedure, fail-closed:
    Missing optional variants are not errors; a missing environment file that
    the project's test command requires is a blocker to report. Never copy
    tracked source changes or arbitrary untracked files.
+   Ticket worktrees only: apply the `isolation` row of the AGENTS.md Checks
+   table from inside the worktree — override only the variables it names (a
+   copied value pointing at the shared service is replaced, never kept), then
+   run its create/migrate command after step 5. `none` → skip. Missing or still
+   a placeholder while the tests use a database → report that parallel tickets
+   share it; do not invent a recipe.
 5. Install dependencies in the worktree with the project's locked package
    manager command. Prefer an offline/frozen install when the local store is
    sufficient; report any network or credential blocker instead of changing
@@ -43,7 +49,8 @@ Procedure, fail-closed:
    when no test command will run there.)
 6. Verify and return: absolute path, exact branch, base `next`, HEAD, clean git
    status, environment filenames copied (names only, never values), whether the
-   test environment is available, and dependency command/result.
+   test environment is available, the isolated test service names (or why
+   none), and dependency command/result.
 
 Never run implementation, Research, Design, Plan, Review or Ship. Workspace
 creation is your only responsibility.
