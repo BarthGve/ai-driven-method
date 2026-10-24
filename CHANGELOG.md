@@ -58,6 +58,14 @@ l'interface d'installation, le patch jamais.
   `templates/design-path-*.md`, lus seulement quand ce chemin est choisi.
 
 ### Corrigé
+- `/dm-release` passe la montée de version par une PR `release/v<version>` vers `next`,
+  préparée dans un worktree jetable de `origin/next`. `/dm-init` protège `next` : le push
+  direct de l'ancienne version échouait. Les checks de la PR sont attendus (« no checks
+  reported » n'est pas un échec), puis squash-merge et `next` local avancé en `--ff-only`.
+  Une PR de bump déjà ouverte, ou un bump déjà sur `next`, ne relance pas la montée.
+- Quick Fix : même cause, `next` protégée. Le commit local part sur une branche
+  `quickfix/<slug>` et une PR ; `next` local est réaligné par `reset --keep` après le squash.
+  Repris du projet avocat.
 - `dm-board.sh` lit le statut dans le Project configuré (`project_id`) et sur le champ
   configuré (`status_field_id`). Il prenait le premier Project de l'issue et son champ
   « Status » par défaut : faux dès qu'une issue est dans deux Projects, ou quand `/dm-init`

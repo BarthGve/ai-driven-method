@@ -19,27 +19,53 @@ Present the candidate US ids (and their children) to the user.
 ## Step 2 — Semver
 AskUserQuestion: bump type — options major / **minor** (default) / patch.
 
-## Step 3 — Bump on `next` (once per release)
-Refuse a second bump if `VERSION` on `next` already differs from `main` **and** a release PR is already open:
+## Step 3 — Bump through a PR into `next` (once per release)
+`next` is protected (no direct push, see /dm-init): the bump reaches it through a short-lived
+`release/v<version>` PR, prepared in a throwaway worktree of `origin/next` — the repository
+base is never reset or committed to.
 
 ```bash
 git fetch origin main next
+bump_pr="$(gh pr list --base next --state open --json url,headRefName --jq '[.[] | select(.headRefName | startswith("release/"))][0].url // empty')"
+if [ -n "$bump_pr" ]; then
+  echo "Bump PR into next still open ($bump_pr). Squash-merge it, then rerun /dm-release."
+  exit 1
+fi
 main_ver="$(git show origin/main:VERSION 2>/dev/null | tr -d '[:space:]' || true)"
-next_ver="$(tr -d '[:space:]' < VERSION)"
+next_ver="$(git show origin/next:VERSION | tr -d '[:space:]')"
 if [ -n "$main_ver" ] && [ "$next_ver" != "$main_ver" ]; then
   open="$(gh pr list --base main --head next --state open --json url --jq '.[0].url // empty')"
   if [ -n "$open" ]; then
     echo "Release already in flight ($open). VERSION on next is $next_ver vs main $main_ver. Do not bump again — squash-merge that PR."
     exit 1
   fi
+  echo "Bump v$next_ver already on next — skip the bump."
 fi
 ```
 
-If that check passes:
+A bump already on `next` (an earlier run stopped after it) → skip to "Realign" below. Otherwise:
 ```bash
-bash .dm/lib/dm-version.sh bump <major|minor|patch>
+wt="$(mktemp -d)/release"
+git worktree add -q --detach "$wt" origin/next
+( cd "$wt" && bash .dm/lib/dm-version.sh bump <major|minor|patch> )
 ```
-Commit `VERSION`, `CHANGELOG.md`, and any synced `package.json` / `pyproject.toml` on `next` (message like `chore: release v$(cat VERSION)`). Push `next`.
+In `$wt`, commit `VERSION`, `CHANGELOG.md` and any synced `package.json` / `pyproject.toml`
+(message like `chore: release v<version>`), then:
+```bash
+ver="$(tr -d '[:space:]' < "$wt/VERSION")"
+git -C "$wt" push origin "HEAD:refs/heads/release/v${ver}"
+git worktree remove "$wt"
+url="$(gh pr create --base next --head "release/v${ver}" --title "chore: release v${ver}" --body "Version bump for the release of v${ver}.")"
+out="$(gh pr checks "$url" --watch --fail-fast --interval 15 2>&1)" || {
+  echo "$out" | grep -q "no checks reported" || { echo "$out"; echo "Bump PR check failed — not merged: $url"; exit 1; }
+}
+```
+"no checks reported" is not a failure (a repo without checks). Then `gh pr merge "$url" --squash --delete-branch` — this bump PR is the release
+gesture the user asked for.
+
+Realign: from the repository base, on `next` with no uncommitted change to `VERSION` or
+`CHANGELOG.md`, `git merge --ff-only origin/next` after `git fetch origin next`. It cannot
+fast-forward → STOP and say why; never reset.
 
 ## Step 4 — PR into `main`
 ```bash
