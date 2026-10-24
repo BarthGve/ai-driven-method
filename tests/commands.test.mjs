@@ -214,3 +214,10 @@ test("git merge-tree --quiet tells a conflicting branch from one merely behind",
   writeFileSync(join(d, "journal.json"), "[1,3]\n"); git("commit", "-qam", "my migration");
   assert.equal(git("merge-tree", "--write-tree", "--quiet", "next", "HEAD").status, 1);
 });
+
+test("ship closes the ticket Issue after test; release closes the story", () => {
+  const ship = readFileSync("src/commands/dm-ship.md", "utf8");
+  const cleanup = ship.slice(ship.indexOf("## Final step — Cleanup"));
+  assert.ok(cleanup.indexOf("status-set <story-id>/<ticket-id> test") < cleanup.indexOf("issue-close <story-id>/<ticket-id>"));
+  assert.match(readFileSync("src/commands/dm-release.md", "utf8"), /issue-close <story-id>\n/);
+});

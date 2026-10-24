@@ -134,6 +134,17 @@ case "$args" in
       process.stdout.write("{}");
     '
     ;;
+  *"issue close"*)
+    node -e '
+      const fs=require("fs");
+      const s=JSON.parse(fs.readFileSync(process.env.DM_GH_STUB_STATE,"utf8"));
+      const num=process.argv.slice(1).find((a)=>/^\d+$/.test(a));
+      const issue=(s.issues||[]).find((i)=>String(i.number)===String(num));
+      if (!issue) process.exit(1);
+      issue.state="CLOSED";
+      fs.writeFileSync(process.env.DM_GH_STUB_STATE, JSON.stringify(s,null,2));
+    ' "$@"
+    ;;
   *"label create"*)
     echo '{"name":"ticket"}'
     ;;

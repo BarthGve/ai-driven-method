@@ -7,6 +7,14 @@ l'interface d'installation, le patch jamais.
 ## Non publié
 
 ### Ajouté
+- Fermeture des Issues : `/dm-ship` ferme l'Issue du ticket après la fusion prouvée (son
+  statut reste `test`), `/dm-release` ferme l'US livrée (`dm-board.sh issue-close`). La
+  colonne « Sub-issues progress » du board, qui compte les sous-issues fermées, suit enfin la
+  livraison : elle restait à 0 % puisque driven ne fermait rien.
+- `/dm-init` supprime le workflow GitHub « Item closed » du board : il passe en `shipped`
+  toute issue fermée (vérifié sur un board réel), ce qui aurait fait passer en production un
+  ticket seulement fusionné dans `next`. Projets existants : le supprimer à la main dans les
+  Workflows du Project quand le board utilise le champ `Status` natif.
 - `.dm/lib/dm-witness.sh <nom> -- <commande>` : saute un contrôle déjà passé par ce contenu
   exact (fichiers suivis et non ignorés ; `docs/reviews` et `docs/plans` exclus). La revue
   et `/dm-ship` ne relancent plus la suite complète quand le code n'a pas bougé.
