@@ -58,6 +58,13 @@ l'interface d'installation, le patch jamais.
   `templates/design-path-*.md`, lus seulement quand ce chemin est choisi.
 
 ### Corrigé
+- `/dm-ship` en mode `auto` attend les checks de la PR avant de fusionner. Il fusionnait
+  aussitôt : refusé par un `next` protégé avec check obligatoire (à chaque ticket), ou
+  fusion sans contrôle ailleurs. Même délai d'enregistrement des checks que `/dm-release`.
+- `/dm-ship` détecte un conflit avec `next` (`git merge-tree`, sans toucher l'arbre) quand
+  un autre ticket a modifié les mêmes fichiers entre-temps (deux migrations, un module
+  partagé). Il rebase sur `origin/next`, relance `full` et repousse en `--force-with-lease` ;
+  un rebase en conflit est annulé et renvoie vers `/dm-execute` en mode correction.
 - `/dm-release` passe la montée de version par une PR `release/v<version>` vers `next`,
   préparée dans un worktree jetable de `origin/next`. `/dm-init` protège `next` : le push
   direct de l'ancienne version échouait. Les checks de la PR sont attendus (« no checks

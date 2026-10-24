@@ -1,4 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, mkdtempSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
@@ -183,4 +186,31 @@ test("release bumps through a PR into protected next, never a direct push", () =
   assert.doesNotMatch(t, /git push origin next\b(?!:)/);
   assert.doesNotMatch(t, /Push `next`/);
   assert.doesNotMatch(t, /reset --hard/);
+});
+
+test("ship rebases a conflicting ticket and waits for checks before an auto merge", () => {
+  const t = readFileSync("src/commands/dm-ship.md", "utf8");
+  assert.match(t, /git merge-tree --write-tree --quiet origin\/next HEAD/);
+  assert.match(t, /git rebase origin\/next/);
+  assert.match(t, /git rebase --abort/);
+  assert.match(t, /--force-with-lease/);
+  const auto = t.slice(t.indexOf("- **auto**"));
+  assert.ok(auto.indexOf("gh pr checks") >= 0 && auto.indexOf("gh pr checks") < auto.indexOf("gh pr merge"), "checks before merge");
+  assert.match(auto, /no checks reported[\s\S]*sleep/);
+});
+
+test("git merge-tree --quiet tells a conflicting branch from one merely behind", () => {
+  const d = mkdtempSync(join(tmpdir(), "mt-"));
+  const git = (...a) => spawnSync("git", a, { cwd: d, encoding: "utf8" });
+  git("init", "-q", "-b", "next");
+  git("config", "user.email", "t@t"); git("config", "user.name", "t");
+  writeFileSync(join(d, "journal.json"), "[1]\n"); writeFileSync(join(d, "other.ts"), "a\n");
+  git("add", "-A"); git("commit", "-qm", "base");
+  git("branch", "ticket");
+  writeFileSync(join(d, "journal.json"), "[1,2]\n"); git("commit", "-qam", "other ticket: migration 2");
+  git("switch", "-q", "ticket");
+  writeFileSync(join(d, "other.ts"), "b\n"); git("commit", "-qam", "disjoint");
+  assert.equal(git("merge-tree", "--write-tree", "--quiet", "next", "HEAD").status, 0);
+  writeFileSync(join(d, "journal.json"), "[1,3]\n"); git("commit", "-qam", "my migration");
+  assert.equal(git("merge-tree", "--write-tree", "--quiet", "next", "HEAD").status, 1);
 });
