@@ -1,6 +1,6 @@
 ---
 name: worktree-manager
-description: Creates and verifies the dedicated worktree for one driven story framing branch or one ticket branch, always from next. Invoked before Research (story) or Execute (ticket).
+description: Creates and verifies the dedicated worktree for one story framing branch or one ticket branch, always from next. Use before Research (story) or Execute (ticket). Not for implementing or cleaning up after a merge.
 tools: Read, Bash, Glob
 model: inherit
 ---

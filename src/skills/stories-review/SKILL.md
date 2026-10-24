@@ -1,6 +1,6 @@
 ---
 name: stories-review
-description: Reviews a user-story breakdown against the PRD perimeter — coverage gaps, graveyard leaks, technical-layer stories, untestable criteria, dependency order. Preloaded in the stories-reviewer subagent.
+description: Reviews a user-story breakdown against the PRD perimeter — coverage gaps, graveyard leaks, technical-layer stories, untestable criteria, dependency order. Use in the stories-reviewer subagent. Not for code review (quality-bar).
 ---
 # Story breakdown review
 

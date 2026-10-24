@@ -1,6 +1,6 @@
 ---
 name: agentic-stories
-description: Breaks a need or a PRD down into user stories an agent can execute. Use during the Stories phase of the driven pipeline.
+description: Breaks a need or a PRD down into user stories an agent can execute. Use during the Stories phase of the driven pipeline. Not for child tickets or reviewing a breakdown (stories-review).
 ---
 # Agentic-ready story breakdown
 

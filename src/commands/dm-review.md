@@ -1,5 +1,5 @@
 ---
-description: Review one child ticket in a fresh-context subagent. Gate before Ship.
+description: Review one child ticket in a fresh-context subagent and append a review round — the gate before Ship. Use after /dm-execute. Not for reviewing the story breakdown (/dm-stories-review) or fixing code.
 argument-hint: <story id> <ticket id>
 allowed-tools:
   - Read
@@ -37,7 +37,7 @@ Invoke the Agent tool:
 - prompt: Review ticket <ticket-id> of story <story-id> (diff `git diff next...feature/<story-id>/<ticket-id>`). Fill templates/review-checklist.md; check design-system conformity when the ticket has UI and design docs exist.
 
 ### Step 2 — Report
-Write the full report to `docs/reviews/<story-id>/<ticket-id>.md`. It MUST end with `Max severity: …` and `Ship allowed: yes` or `Ship allowed: no`.
+Append the reviewer's round to `docs/reviews/<story-id>/<ticket-id>.md`, after any earlier round, never rewriting one. The file MUST end with `Max severity: …` and `Ship allowed: yes` or `Ship allowed: no`: the gates read the last verdict.
 
 ### Step 3 — Gate (fail-closed)
 - CRITICAL or MAJOR → "Ship blocked. Fix via /dm-execute <story-id> <ticket-id> (fix mode), then rerun /dm-review …"

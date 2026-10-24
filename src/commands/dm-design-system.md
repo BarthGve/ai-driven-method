@@ -1,5 +1,5 @@
 ---
-description: Capture and structure the global design system into docs/design-system.md. Doesn't generate visuals — it records them.
+description: Capture and structure the global design system into docs/design-system.md. Records visuals, doesn't generate them. Use once per product, after /dm-architect. Not for one story's screen (/dm-design).
 argument-hint: (optional) source of the visual direction
 allowed-tools:
   - Read

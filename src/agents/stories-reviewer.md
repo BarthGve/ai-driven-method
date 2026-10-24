@@ -1,6 +1,6 @@
 ---
 name: stories-reviewer
-description: Reviews the story breakdown against the PRD perimeter, fresh context, read-only. Invoked by /dm-stories-review.
+description: Reviews the story breakdown against the PRD perimeter, fresh context, read-only. Use only through /dm-stories-review. Not for code review.
 tools: Read, Grep, Glob
 model: inherit
 skills:

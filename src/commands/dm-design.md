@@ -1,5 +1,5 @@
 ---
-description: Derive a story's screen from the design system. Agent path (generates), native /design canvas on Claude, or external brief. Never freestyles outside the system.
+description: Derive a story's screen from the design system — agent, native /design canvas on Claude, or external brief. Use after /dm-research for a story with UI. Not for the global system (/dm-design-system) or stories without UI.
 argument-hint: <story id or name> [--agent | --canvas | --brief]
 allowed-tools:
   - Read

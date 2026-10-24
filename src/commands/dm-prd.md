@@ -1,5 +1,5 @@
 ---
-description: Frame the product — clone or greenfield, perimeter, the WHAT and the WHY
+description: Frame the product — clone or greenfield, perimeter, the WHAT and the WHY. Use first, once per product. Not for a feature on a shipped product (/dm-feature) or onboarding existing code (/dm-continue).
 argument-hint: <target SaaS or product idea>
 allowed-tools:
   - Read

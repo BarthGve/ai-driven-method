@@ -1,5 +1,5 @@
 ---
-description: Implement one child ticket in TDD via the implementer subagent
+description: Implement one child ticket in TDD via the implementer subagent. Use when the plan is validated and the ticket is ready, or to fix a blocked review. Not for planning (/dm-plan) or a small presentation tweak (Quick Fix).
 argument-hint: <story id> <ticket id>
 allowed-tools:
   - Read
@@ -37,7 +37,7 @@ If you can't invoke the Agent tool, stop and report the error. Don't improvise.
 4. Invoke `worktree-manager` for `.worktrees/<story-id>/<ticket-id>` on `feature/<story-id>/<ticket-id>` from **`next`**. Continue only after the absolute path and exact branch are confirmed.
 5. From that worktree, read docs/plans/<story-id>.md. Frontmatter must contain `validated: yes`. Otherwise STOP.
 6. Ticket dependencies in the plan that are not yet `test` or `shipped` → STOP and name them.
-7. If `docs/reviews/<story-id>/<ticket-id>.md` contains `Ship allowed: no`, this is a FIX run: those findings come first.
+7. If the last `Ship allowed:` line of `docs/reviews/<story-id>/<ticket-id>.md` says `no`, this is a FIX run: the findings of that last round come first.
 
 ### Step 2 — Delegate
 Invoke the Agent tool:
@@ -45,7 +45,7 @@ Invoke the Agent tool:
 - description: Implement ticket <story-id>/<ticket-id> in TDD
 - working directory: the absolute ticket worktree path
 - prompt: Implement ticket <ticket-id> of story <story-id> from docs/plans/<story-id>.md (only that ticket's tasks), following docs/architecture.md and AGENTS.md. Read docs/research/<story-id>.md when it exists. Strict TDD task by task. One single commit at the end of the ticket. Do not create a worktree or switch branches.
-- On a FIX run, prepend: Fix every critical and major finding from docs/reviews/<story-id>/<ticket-id>.md first, test-first.
+- On a FIX run, prepend: Fix every critical and major finding of the last round of docs/reviews/<story-id>/<ticket-id>.md first, test-first.
 
 ### Step 3 — Report
 Summarize: tasks done, files touched, tests added, blockers.

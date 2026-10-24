@@ -13,13 +13,25 @@ l'interface d'installation, le patch jamais.
 - Section `## Checks` dans `AGENTS.md` (remplie par `/dm-architect`) : `focused` pendant une
   tâche, `fast` et `full` avant le commit du ticket, `ci` jamais lancé par un agent.
 
+- `tests/references.test.mjs` : échoue si la prose cite un template, un script `.dm/lib`,
+  une commande `/dm-*`, un agent ou un skill qui n'existe pas.
+
 ### Modifié
+- Revue en rounds : chaque `/dm-review` ajoute un `## Round <n>` à
+  `docs/reviews/<story>/<ticket>.md` sans réécrire les précédents ; le round suivant vérifie
+  que chaque constat critique ou majeur est corrigé. `dm-gate.sh`, `/dm-ship`, `/dm-execute`
+  et `/dm-status` lisent le **dernier** verdict.
+- Descriptions des commandes, skills et agents : « Use when… / Not for… », pour que Codex
+  déclenche le bon skill et renvoie vers la commande voisine.
 - `tdd-skill` : tests ciblés à chaque tâche et pour les mutations ; suite complète une seule
   fois, avant le commit du ticket. `quality-bar` : mutations du reviewer sur les fichiers ciblés.
 - Chargement à la demande : les chemins canvas et brief de `/dm-design` passent dans
   `templates/design-path-*.md`, lus seulement quand ce chemin est choisi.
 
 ### À savoir
+- Revues existantes : un fichier sans `## Round` reste lu (dernier `Ship allowed:`) ; le
+  prochain `/dm-review` y ajoute le round 2. Relance `./install.sh --hooks` : les anciens
+  hooks de `.dm-hooks/` acceptent n'importe quel `Ship allowed: yes` du fichier, même suivi d'un `no`.
 - `AGENTS.md` n'est jamais écrasé : ajoute la section « Checks » à la main dans les projets existants.
 - `dm-witness.sh` n'est pas dans `--permissions` : il exécute la commande qu'on lui passe,
   l'autoriser reviendrait à autoriser n'importe quelle commande.

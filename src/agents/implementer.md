@@ -1,6 +1,6 @@
 ---
 name: implementer
-description: Implements one planned ticket, in TDD, in an isolated context. Invoked by /dm-execute.
+description: Implements one planned ticket, in TDD, in an isolated context. Use only through /dm-execute. Not for planning, reviewing or a Quick Fix.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: opus
 skills:

@@ -1,5 +1,5 @@
 ---
-description: Review the story breakdown against the PRD perimeter, in a fresh-context subagent. Cheapest place to catch a bad split.
+description: Review the story breakdown against the PRD perimeter, in a fresh-context subagent — the cheapest place to catch a bad split. Use after /dm-stories. Not for reviewing code (/dm-review).
 allowed-tools:
   - Read
   - Grep

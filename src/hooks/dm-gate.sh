@@ -11,7 +11,7 @@
 #
 # Subcommands:
 #   dm-gate plan-validated <id>              exit 0 if docs/plans/<story>.md has `validated: yes`
-#   dm-gate ship-allowed  <id>               exit 0 if the review has `Ship allowed: yes`
+#   dm-gate ship-allowed  <id>               exit 0 if the review's last verdict is `Ship allowed: yes`
 #   dm-gate ready-ok [story/ticket]          exit 0 if board child is ready|in progress (or no config)
 #   dm-gate default-integration-branch       prints `next`
 #   dm-gate pre-commit                       block code without validated plan + ready child;
@@ -85,7 +85,8 @@ ship_allowed() {
   local id="$1" root; root="$(repo_root)"
   local f="$root/docs/reviews/$id.md"
   [ -f "$f" ] || { echo "dm-gate: no review for '$id' (docs/reviews/$id.md missing). Run /dm-review $id." >&2; return 1; }
-  if grep -qE '^Ship allowed:[[:space:]]*yes[[:space:]]*$' "$f"; then
+  # Rounds are appended: only the last verdict counts.
+  if grep -E '^Ship allowed:' "$f" | tail -n 1 | grep -qE '^Ship allowed:[[:space:]]*yes[[:space:]]*$'; then
     return 0
   fi
   echo "dm-gate: ship blocked for '$id' (docs/reviews/$id.md is not 'Ship allowed: yes')." >&2
