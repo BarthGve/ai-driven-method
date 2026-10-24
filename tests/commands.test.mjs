@@ -172,3 +172,13 @@ test("status and help route a fully shipped product to dm-feature", () => {
   assert.match(readFileSync("src/commands/dm-status.md", "utf8"), /\/dm-feature/);
   assert.match(readFileSync("src/commands/dm-help.md", "utf8"), /\/dm-feature/);
 });
+
+test("release bumps through a PR into protected next, never a direct push", () => {
+  const t = readFileSync("src/commands/dm-release.md", "utf8");
+  assert.match(t, /HEAD:refs\/heads\/release\/v\$\{ver\}/);
+  assert.match(t, /gh pr create --base next --head "release\/v\$\{ver\}"/);
+  assert.match(t, /no checks reported/);
+  assert.doesNotMatch(t, /git push origin next\b(?!:)/);
+  assert.doesNotMatch(t, /Push `next`/);
+  assert.doesNotMatch(t, /reset --hard/);
+});

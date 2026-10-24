@@ -26,7 +26,10 @@ work turns out to be one: stop, recommend the pipeline, write no more code.
 Announce the mode and exact scope first; minimal diff; verify proportionately
 (focused lint, typecheck, existing test or browser check). Only in the
 repository base directory on branch `next` — not on `next` → stop and ask, never
-switch branches yourself.
+switch branches yourself. `next` is protected: commit on local `next`, push it to
+a short-lived branch (`git push origin next:quickfix/<slug>`), squash-merge its PR
+into `next`, then `git fetch origin next && git reset --keep origin/next` (the
+squash replaces your local commit; `--keep` refuses rather than lose uncommitted work).
 
 ## Branches and directories
 
