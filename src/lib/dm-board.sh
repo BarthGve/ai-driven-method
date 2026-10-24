@@ -8,8 +8,8 @@
 #   issue-create-us <story-id> <title> <body-file>
 #   issue-create-ticket <story-id> <ticket-id> <title> <body-file>
 #   require-ready <story-id>/<ticket-id>
-#   parent-sync <story-id>
-#   status-all                     → one line per driven issue: <key><TAB><status>
+#   parent-sync <story-id>          (also run by every status-set on a child)
+#   status-all                     → one line per driven issue on the board: <key><TAB><status>
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
@@ -18,78 +18,89 @@ source "$SCRIPT_DIR/dm-config.sh"
 
 gh_bin() { command -v gh; }
 
-# The issue list is read once per invocation (each 100 issues cost one GraphQL point) and
-# reused by every lookup. Safe because every command reads only after its last write
-# (issue create and item-add happen before the first lookup); a command that reads, then
-# creates, then reads again must empty "$DM_ISSUES_CACHE" in between.
-DM_ISSUES_CACHE="$(mktemp)"
-trap 'rm -f "$DM_ISSUES_CACHE"' EXIT
-# ponytail: a board past this many issues is truncated with a warning; raise it if one ever is.
-DM_ISSUE_LIMIT="${DM_ISSUE_LIMIT:-5000}"
+# Items of the configured Project V2 (project_id), with the configured status field
+# (status_field_id). Not `gh issue list --json projectItems`: that gives the first project an
+# issue belongs to and its default "Status" field, which /dm-init may not be the one in use.
+# Read once per invocation (each 100 items cost one GraphQL point) and reused by every lookup.
+# Safe because every command reads only after its last write (issue create and item-add
+# happen before the first lookup); a command that reads, then creates, then reads again must
+# empty "$DM_ITEMS_CACHE" in between.
+DM_ITEMS_CACHE="$(mktemp)"
+trap 'rm -f "$DM_ITEMS_CACHE"' EXIT
 
-issues_json() {
-  if [ ! -s "$DM_ISSUES_CACHE" ]; then
-    "$(gh_bin)" issue list \
-      -R "$(dm_config_repo)" \
-      --state all \
-      --limit "$DM_ISSUE_LIMIT" \
-      --json title,number,id,projectItems >"$DM_ISSUES_CACHE"
-    node -e '
-      const n = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).length;
-      if (n >= Number(process.argv[2])) console.error("dm-board: WARNING: " + n + " issues read, the limit — older ones may be missing (raise DM_ISSUE_LIMIT)");
-    ' "$DM_ISSUES_CACHE" "$DM_ISSUE_LIMIT"
+ITEMS_QUERY='query($id:ID!,$endCursor:String){node(id:$id){... on ProjectV2{items(first:100,after:$endCursor){totalCount pageInfo{hasNextPage endCursor} nodes{id content{... on Issue{id number title}} fieldValues(first:50){nodes{... on ProjectV2ItemFieldSingleSelectValue{name field{... on ProjectV2SingleSelectField{id}}}}}}}}}}'
+
+# Prints [{item_id, id, number, title, status}] — id/number/title are the issue's.
+# GitHub sometimes answers a short list with exit code 0 (fewer items than totalCount):
+# reread a few times, then fail loudly — a short list must never read as "not found".
+# A gh error (quota, network) fails at once: retrying would only spend more quota.
+items_json() {
+  if [ ! -s "$DM_ITEMS_CACHE" ]; then
+    local n=1 attempts="${DM_BOARD_MAX_ATTEMPTS:-3}" delay="${DM_BOARD_RETRY_DELAY:-2}" pages rc
+    while :; do
+      pages="$("$(gh_bin)" api graphql --paginate --slurp -f id="$DM_PROJECT_ID" -f query="$ITEMS_QUERY")" || {
+        echo "dm-board: project board unreadable (GraphQL error — quota? see bash .dm/lib/dm-quota.sh)" >&2
+        return 3
+      }
+      rc=0
+      node -e '
+        const pages = JSON.parse(require("fs").readFileSync(0, "utf8"));
+        const field = process.argv[1];
+        const conn = (p) => (p.data && p.data.node && p.data.node.items) || { nodes: [], totalCount: 0 };
+        const total = pages.length ? conn(pages[0]).totalCount : 0;
+        const nodes = pages.flatMap((p) => conn(p).nodes);
+        if (nodes.length < total) { console.error(nodes.length + "/" + total); process.exit(4); }
+        const out = nodes.filter((n) => n.content && n.content.title).map((n) => {
+          const v = (n.fieldValues.nodes || []).find((x) => x && x.field && x.field.id === field);
+          return { item_id: n.id, id: n.content.id, number: n.content.number, title: n.content.title, status: v ? v.name : "" };
+        });
+        process.stdout.write(JSON.stringify(out));
+      ' "$DM_STATUS_FIELD_ID" <<<"$pages" >"$DM_ITEMS_CACHE" 2>"$DM_ITEMS_CACHE.err" || rc=$?
+      if [ "$rc" -eq 0 ]; then rm -f "$DM_ITEMS_CACHE.err"; break; fi
+      : >"$DM_ITEMS_CACHE"
+      if [ "$rc" -ne 4 ] || [ "$n" -ge "$attempts" ]; then
+        echo "dm-board: project board read incomplete after $n attempts (items read/total: $(cat "$DM_ITEMS_CACHE.err")) — retry later" >&2
+        rm -f "$DM_ITEMS_CACHE.err"
+        return 3
+      fi
+      n=$((n + 1)); sleep "$delay"
+    done
   fi
-  cat "$DM_ISSUES_CACHE"
+  cat "$DM_ITEMS_CACHE"
 }
 
-
-# Exact title key match: "[key] ..." or "[key]"
+# Exact title key match: "[key] ..." or "[key]". Exit 2 = not on the board, 3 = board unreadable.
 find_issue_json() {
-  local key="$1"
-  issues_json | node -e '
+  local key="$1" list
+  list="$(items_json)" || return 3
+  node -e '
     const key = process.argv[1];
     const prefix = "[" + key + "]";
-    const issues = JSON.parse(require("fs").readFileSync(0, "utf8"));
-    const hit = issues.find((i) => {
-      const t = i.title || "";
-      return t === prefix || t.startsWith(prefix + " ");
-    });
+    const items = JSON.parse(require("fs").readFileSync(0, "utf8"));
+    const hit = items.find((i) => i.title === prefix || i.title.startsWith(prefix + " "));
     if (!hit) process.exit(2);
     process.stdout.write(JSON.stringify(hit));
-  ' "$key"
+  ' "$key" <<<"$list"
 }
 
 issue_status_name() {
-  local key="$1"
-  local raw
-  if ! raw="$(find_issue_json "$key")"; then
-    echo "dm-board: issue not found for key '$key'" >&2
+  local key="$1" raw rc=0
+  raw="$(find_issue_json "$key")" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    [ "$rc" -eq 2 ] && echo "dm-board: issue not found on the project board for key '$key'" >&2
     return 1
   fi
   node -e '
-    const issue = JSON.parse(process.argv[1]);
-    const items = issue.projectItems || [];
-    if (!items.length || !items[0].status || !items[0].status.name) {
-      console.error("dm-board: no project status for "+(issue.title||""));
-      process.exit(1);
-    }
-    process.stdout.write(String(items[0].status.name));
+    const item = JSON.parse(process.argv[1]);
+    if (!item.status) { console.error("dm-board: no project status for " + item.title); process.exit(1); }
+    process.stdout.write(item.status);
   ' "$raw"
 }
 
 issue_project_item_id() {
-  local key="$1"
   local raw
-  raw="$(find_issue_json "$key")"
-  node -e '
-    const issue = JSON.parse(process.argv[1]);
-    const items = issue.projectItems || [];
-    if (!items.length || !items[0].id) {
-      console.error("dm-board: no project item id");
-      process.exit(1);
-    }
-    process.stdout.write(String(items[0].id));
-  ' "$raw"
+  raw="$(find_issue_json "$1")" || { echo "dm-board: no project item id" >&2; return 1; }
+  node -e 'process.stdout.write(JSON.parse(process.argv[1]).item_id)' "$raw"
 }
 
 cmd_status_get() {
@@ -133,6 +144,18 @@ cmd_status_set() {
     --field-id "$DM_STATUS_FIELD_ID" \
     --single-select-option-id "$option_id" \
     >/dev/null
+  # The cached board must show this write: the parent derivation below reads it.
+  node -e '
+    const fs = require("fs");
+    const items = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    for (const i of items) if (i.item_id === process.argv[2]) i.status = process.argv[3];
+    fs.writeFileSync(process.argv[1], JSON.stringify(items));
+  ' "$DM_ITEMS_CACHE" "$item_id" "$status"
+  # A child's move is the parent's move: derive the US from its tickets now, not at ship only.
+  case "$key" in
+    */*) cmd_parent_sync "${key%%/*}" >/dev/null ||
+      echo "dm-board: WARNING: '$key' set to '$status', but its parent US was not re-derived (rerun parent-sync ${key%%/*})" >&2 ;;
+  esac
 }
 
 cmd_require_ready() {
@@ -171,7 +194,7 @@ derive_parent_status() {
     const any = (set) => lines.some((s) => set.has(s));
     if (all(new Set(["shipped"]))) process.stdout.write("shipped");
     else if (all(new Set(["test", "shipped"]))) process.stdout.write("test");
-    else if (any(new Set(["in progress", "test", "shipped"]))) process.stdout.write("in progress");
+    else if (any(new Set(["ready", "in progress", "test", "shipped"]))) process.stdout.write("in progress");
     else process.stdout.write("backlog");
   '
 }
@@ -188,18 +211,12 @@ cmd_parent_sync() {
   dm_config_load
   local children_statuses desired current
   children_statuses="$(
-    issues_json | node -e '
-      const story = process.argv[1];
-      const needle = "[" + story + "/";
-      const issues = JSON.parse(require("fs").readFileSync(0, "utf8"));
-      for (const i of issues) {
-        const t = i.title || "";
-        if (!t.startsWith(needle)) continue;
-        const st = (i.projectItems && i.projectItems[0] && i.projectItems[0].status && i.projectItems[0].status.name) || "";
-        if (st) console.log(st);
-      }
+    items_json | node -e '
+      const needle = "[" + process.argv[1] + "/";
+      for (const i of JSON.parse(require("fs").readFileSync(0, "utf8")))
+        if (i.title.startsWith(needle) && i.status) console.log(i.status);
     ' "$story"
-  )"
+  )" || return 1
   desired="$(printf '%s\n' "$children_statuses" | derive_parent_status)"
   if ! current="$(issue_status_name "$story" 2>/dev/null)"; then
     echo "dm-board: parent issue '$story' not found" >&2
@@ -215,15 +232,14 @@ cmd_parent_sync() {
 
 cmd_status_all() {
   dm_config_load
-  issues_json | node -e '
-    const issues = JSON.parse(require("fs").readFileSync(0, "utf8"));
-    for (const i of issues) {
-      const m = /^\[([^\]]+)\]/.exec(i.title || "");
-      if (!m) continue;
-      const st = (i.projectItems && i.projectItems[0] && i.projectItems[0].status && i.projectItems[0].status.name) || "-";
-      console.log(m[1] + "\t" + st);
+  local list
+  list="$(items_json)" || return 1
+  node -e '
+    for (const i of JSON.parse(require("fs").readFileSync(0, "utf8"))) {
+      const m = /^\[([^\]]+)\]/.exec(i.title);
+      if (m) console.log(m[1] + "\t" + (i.status || "-"));
     }
-  '
+  ' <<<"$list"
 }
 
 extract_issue_number_from_url() {
@@ -344,7 +360,7 @@ cmd_issue_create_ticket() {
       const prefix="["+key+"]";
       const hit=issues.find(i=> (i.title||"")===prefix || (i.title||"").startsWith(prefix+" "));
       process.stdout.write(hit && hit.id ? hit.id : "");
-    ' "$key" <<<"$(issues_json)" 2>/dev/null || true)"
+    ' "$key" <<<"$(items_json)" 2>/dev/null || true)"
     if [ -n "$parent_id" ] && [ -n "$child_id" ]; then
       if "$(gh_bin)" api graphql -f query='mutation($p:ID!,$c:ID!){addSubIssue(input:{issueId:$p,subIssueId:$c}){issue{id}}}' \
         -f p="$parent_id" -f c="$child_id" >/dev/null 2>&1; then

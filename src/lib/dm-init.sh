@@ -301,51 +301,34 @@ create_project_and_config() {
   # Link project to repo (best-effort)
   gh project link "$project_number" --owner "$OWNER" --repo "$REPO_NAME" >/dev/null 2>&1 || true
 
-  # Create SINGLE_SELECT field with exact five statuses.
-  # Prefer a dedicated field name if default Status cannot be rewritten.
-  local field_json field_id
-  field_json="$(
-    gh project field-create "$project_number" \
-      --owner "$OWNER" \
-      --name "Status" \
-      --data-type SINGLE_SELECT \
-      --single-select-options "backlog,ready,in progress,test,shipped" \
-      --format json 2>/dev/null || true
-  )"
-  if [ -z "$field_json" ]; then
-    field_json="$(
-      gh project field-create "$project_number" \
-        --owner "$OWNER" \
-        --name "DM Status" \
-        --data-type SINGLE_SELECT \
-        --single-select-options "backlog,ready,in progress,test,shipped" \
-        --format json
-    )"
-  fi
-  field_id="$(node -e 'const j=JSON.parse(process.argv[1]); process.stdout.write(j.id||"")' "$field_json")"
-  [ -n "$field_id" ] || die "failed to create status field"
-
-  # Map option names → ids from field-list + field-create payload
-  local fields_json status_json
+  # The board uses the project's own "Status" field, never an extra one: it is the field the
+  # board view, filters and GitHub's built-in workflows read. Its options (Todo, In Progress,
+  # Done) are replaced by the five driven statuses — the project is new, no item uses them.
+  local fields_json field_id status_json
   fields_json="$(gh project field-list "$project_number" --owner "$OWNER" --format json)"
+  field_id="$(node -e '
+    const j = JSON.parse(process.argv[1] || "{}");
+    const list = Array.isArray(j) ? j : (j.fields || []);
+    const f = list.find((x) => x.name === "Status" && /SingleSelect/i.test(x.type || ""));
+    process.stdout.write((f && f.id) || "");
+  ' "$fields_json")"
+  [ -n "$field_id" ] || die "project ${project_number} has no built-in single-select Status field"
   status_json="$(
-    node -e '
-      const fieldId = process.argv[1];
-      const fields = JSON.parse(process.argv[2] || "{}");
-      const created = JSON.parse(process.argv[3] || "{}");
-      const list = Array.isArray(fields) ? fields : (fields.fields || fields.items || []);
-      const field = list.find((f) => f.id === fieldId) || list.find((f) => (f.name === "Status" || f.name === "DM Status"));
-      const options = (field && (field.options || field.configuration?.options)) || [];
-      const status = {};
-      for (const opt of options) {
-        if (opt && opt.name) status[opt.name] = opt.id;
-      }
-      for (const o of created.options || []) {
-        if (o && o.name && !status[o.name]) status[o.name] = o.id;
-      }
-      process.stdout.write(JSON.stringify(status));
-    ' "$field_id" "$fields_json" "$field_json"
-  )"
+    gh api graphql -f field="$field_id" -f query='mutation($field:ID!){updateProjectV2Field(input:{fieldId:$field,singleSelectOptions:[
+      {name:"backlog",color:GRAY,description:""},
+      {name:"ready",color:BLUE,description:""},
+      {name:"in progress",color:YELLOW,description:""},
+      {name:"test",color:PURPLE,description:""},
+      {name:"shipped",color:GREEN,description:""}
+    ]}){projectV2Field{... on ProjectV2SingleSelectField{options{id name}}}}}' |
+      node -e '
+        const j = JSON.parse(require("fs").readFileSync(0, "utf8"));
+        const f = j.data && j.data.updateProjectV2Field && j.data.updateProjectV2Field.projectV2Field;
+        const status = {};
+        for (const o of (f && f.options) || []) status[o.name] = o.id;
+        process.stdout.write(JSON.stringify(status));
+      '
+  )" || die "failed to set the Status options of project ${project_number}"
 
   # Fail closed: never write .dm/config.json with incomplete status_option_ids
   assert_status_option_ids "$status_json"

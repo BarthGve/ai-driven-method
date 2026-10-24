@@ -95,7 +95,7 @@ repo → `/dm-prd`; `docs/prd.md` already present → `/dm-status`.
 
 **/dm-prd** — frames the product by interviewing the user. First question: **clone** an existing SaaS vs **greenfield**. Clone mode covers target, kill mode (internal replacement vs competing product), why, the 20% perimeter, complexity scores, graveyard, and angle beyond parity. Greenfield covers need, users, why now, in/out of scope (graveyard still kills creep), constraints, and success — no fake “target SaaS”. Nothing is filled without validation. The WHAT and the WHY, never the HOW.
 
-**/dm-init** — bootstraps the app repo after the PRD: confirm remote name/visibility/owner, create `next` from `main`, protect both branches, create the Project V2 board with statuses `backlog | ready | in progress | test | shipped`, write `.dm/config.json`, enable the wiki, write `VERSION` (`0.1.0` if absent). Idempotent: re-runs only fill gaps.
+**/dm-init** — bootstraps the app repo after the PRD: confirm remote name/visibility/owner, create `next` from `main`, protect both branches, create the Project V2 board and set its built-in `Status` field to `backlog | ready | in progress | test | shipped` (no extra field), write `.dm/config.json`, enable the wiki, write `VERSION` (`0.1.0` if absent). Idempotent: re-runs only fill gaps.
 
 **/dm-stories** — breaks the PRD into agentic-ready user stories (`agentic-stories` skill). Each US gets **one parent Issue** in `backlog`. Child tickets are **not** created here. Parent US never uses status `ready`.
 
@@ -123,7 +123,7 @@ mockup are.
 
 **/dm-review** — `reviewer` + `quality-bar` skill. Diff is `git diff next...feature/<story>/<ticket>`. Ends with `Max severity: …` and `Ship allowed: yes|no`. **A single critical or major = Ship allowed: no.**
 
-**/dm-ship** — greps `Ship allowed: yes`, opens PR into **`next`**. After a proven merge: child → `test`, `parent-sync`.
+**/dm-ship** — greps `Ship allowed: yes`, opens PR into **`next`**. After a proven merge: child → `test`.
 
 ### Production
 
@@ -149,7 +149,7 @@ leaves `docs/reviews/stories.md` alone — that file carries the product-level
 
 **/dm-help** — French pipeline map (US vs tickets). User-invoked only.
 
-**/dm-status** — framing + board columns via `status-get` + next useful command.
+**/dm-status** — framing + board columns via one `status-all` + next useful command.
 
 ## US vs tickets
 

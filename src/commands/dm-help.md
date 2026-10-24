@@ -27,7 +27,7 @@ Règle unique : interdit de coder en direct. Chaque feature passe par le pipelin
 La colonne **`ready` n'existe que sur les tickets enfants**, jamais sur l'US parent.
 11. /dm-execute <story> <ticket>  — `require-ready` puis code en TDD (subagent)
 12. /dm-review <story> <ticket>   — review + gate `Ship allowed`
-13. /dm-ship <story> <ticket>     — PR vers **`next`** ; après merge → enfant `test` + `parent-sync`
+13. /dm-ship <story> <ticket>     — PR vers **`next`** ; après merge → enfant `test` (l'US suit)
 
 ## Release (production)
 14. /dm-release           — US parent en `test` ; bump VERSION ; PR `next` → `main` ; wiki ; `shipped`

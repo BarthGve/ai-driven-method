@@ -23,6 +23,16 @@ l'interface d'installation, le patch jamais.
   Deux tickets en parallèle ne verrouillent ni ne vident plus la même base de test.
 
 ### Modifié
+- L'US suit ses tickets : chaque `status-set` sur un ticket recalcule son US, dans la même
+  lecture du board. Avant, seul `/dm-ship` le faisait, et l'US restait en `backlog` pendant
+  que ses tickets avançaient. Un ticket `ready` compte désormais : l'US passe `in progress`.
+  `/dm-status` signale une US décalée (ticket déplacé à la main sur GitHub) et donne la
+  commande `parent-sync`. `/dm-release` ne pose plus l'US à la main : elle passe `shipped`
+  avec son dernier ticket.
+- `/dm-init` utilise le champ `Status` natif du Project : ses options (Todo, In Progress,
+  Done) sont remplacées par `backlog | ready | in progress | test | shipped`. Il ne crée plus
+  de champ « DM Status ». Les projets existants qui en ont un continuent de fonctionner :
+  `dm-board.sh` lit le champ indiqué par `status_field_id`.
 - `AGENTS.md` réduit à ce qui sert à chaque session (139 → 68 lignes, ~1 700 → ~600 mots) :
   règle absolue, Quick Fix, branches et dossiers, ids, stratégie de ship, conventions,
   Checks. Le reste vit dans la commande ou l'agent qui l'applique (ports et design system
@@ -48,8 +58,18 @@ l'interface d'installation, le patch jamais.
   `templates/design-path-*.md`, lus seulement quand ce chemin est choisi.
 
 ### Corrigé
+- `dm-board.sh` lit le statut dans le Project configuré (`project_id`) et sur le champ
+  configuré (`status_field_id`). Il prenait le premier Project de l'issue et son champ
+  « Status » par défaut : faux dès qu'une issue est dans deux Projects, ou quand `/dm-init`
+  a créé un champ « DM Status » (`status-set` échouait avec « no project item id »).
+  Une seule requête GraphQL paginée, 100 éléments par point.
+- Liste du board tronquée : GitHub renvoie parfois moins d'éléments que `totalCount` sans
+  erreur. Relecture bornée (3 essais), puis échec explicite au lieu d'un faux « not found ».
+- Sécurité : `dm-config.sh` entoure les valeurs de `.dm/config.json` d'apostrophes. Avec des
+  guillemets doubles, une valeur contenant `$(…)` ou des backticks était exécutée.
+  Ces trois correctifs viennent du projet lagarde.
 - `dm-board.sh` ne lisait que 200 issues : au-delà, un ticket devenait « issue not found ».
-  Limite portée à 5000 (`DM_ISSUE_LIMIT`), avec un avertissement si elle est atteinte.
+  Il lit désormais tout le board, page par page, sans limite.
 
 ### À savoir
 - Revues existantes : un fichier sans `## Round` reste lu (dernier `Ship allowed:`) ; le

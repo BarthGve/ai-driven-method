@@ -187,12 +187,47 @@ test("status-all prints every driven issue's status from one read", () => {
   const { d, statePath, bin } = appDir([
     { title: "[s01-x] Parent", number: 1, projectItems: [{ id: "P1", status: { optionId: "opt3", name: "in progress" } }] },
     { title: "[s01-x/t01-a] A", number: 2, projectItems: [{ id: "P2", status: { optionId: "opt2", name: "ready" } }] },
-    { title: "[s01-x/t02-b] B", number: 3, projectItems: [] },
+    { title: "[s01-x/t02-b] B", number: 3, projectItems: [{ id: "P3" }] },
+    { title: "[s01-x/t03-c] Off the board", number: 5, projectItems: [] },
     { title: "Hand-written, not driven", number: 4, projectItems: [] },
   ]);
   const out = runBoard(d, bin, statePath, ["status-all"]);
   assert.equal(out, "s01-x\tin progress\ns01-x/t01-a\tready\ns01-x/t02-b\t-\n");
   assert.equal(JSON.parse(readFileSync(statePath, "utf8")).list_calls, 1);
+});
+
+test("status comes from the configured project and field, not the issue's first project", () => {
+  const { d, statePath, bin } = appDir([
+    {
+      title: "[s01-x/t01-y] Persist",
+      number: 2,
+      projectItems: [
+        { id: "OTHER_ITEM", project: "PVT_other", status: { optionId: "x", name: "shipped" } },
+        { id: "PVTI_2", fieldId: "FIELD_default_status", status: { optionId: "x", name: "Done" } },
+        { id: "PVTI_2", status: { optionId: "opt2", name: "ready" } },
+      ],
+    },
+  ]);
+  assert.equal(runBoard(d, bin, statePath, ["status-get", "s01-x/t01-y"]).trim(), "ready");
+  runBoard(d, bin, statePath, ["status-set", "s01-x/t01-y", "in progress"]);
+  const edit = JSON.parse(readFileSync(statePath, "utf8")).edits.at(-1);
+  assert.equal(edit.id, "PVTI_2");
+});
+
+test("a short board list is reread, and a persistent one fails instead of 'not found'", () => {
+  const issue = { title: "[s01-x/t01-y] Persist", number: 2, projectItems: [{ id: "PVTI_2", status: { optionId: "opt2", name: "ready" } }] };
+  const env = (statePath, bin) => ({ ...process.env, PATH: `${bin}:${process.env.PATH}`, DM_GH_STUB_STATE: statePath, DM_BOARD_RETRY_DELAY: "0" });
+  const once = appDir([issue]);
+  const st = JSON.parse(readFileSync(once.statePath, "utf8"));
+  writeFileSync(once.statePath, JSON.stringify({ ...st, items_short_remaining: 1 }));
+  const ok = spawnSync("bash", [BOARD, "require-ready", "s01-x/t01-y"], { cwd: once.d, encoding: "utf8", env: env(once.statePath, once.bin) });
+  assert.equal(ok.status, 0, ok.stderr);
+  const always = appDir([issue]);
+  writeFileSync(always.statePath, JSON.stringify({ ...st, items_short_remaining: 99 }));
+  const ko = spawnSync("bash", [BOARD, "require-ready", "s01-x/t01-y"], { cwd: always.d, encoding: "utf8", env: env(always.statePath, always.bin) });
+  assert.notEqual(ko.status, 0);
+  assert.match(ko.stderr, /incomplete after 3 attempts/);
+  assert.doesNotMatch(ko.stderr, /not found/);
 });
 
 test("issue-create-ticket finds the issue it just created, in a single read", () => {
@@ -412,4 +447,73 @@ test("issue-adopt renames a hand-written issue and puts it on the board", () => 
   const issue = s.issues.find((i) => i.number === 7);
   assert.equal(issue.title, "[s03-export-csv] Export CSV");
   assert.equal(s.item_add_calls, 1);
+});
+
+test("config values are never executed by the shell, and quotes survive", () => {
+  const { d, statePath, bin } = appDir([
+    { title: "[s01-x/t01-y] Persist", number: 2, projectItems: [{ id: "PVTI_2", status: { optionId: "opt2", name: "ready" } }] },
+  ]);
+  const pwned = join(d, "pwned");
+  const cfg = JSON.parse(readFileSync(join(d, ".dm/config.json"), "utf8"));
+  cfg.repo = `app$(touch ${pwned})\`touch ${pwned}\``;
+  cfg.status_option_ids.ready = "it's";
+  writeFileSync(join(d, ".dm/config.json"), JSON.stringify(cfg));
+  const out = execFileSync("bash", ["-c", `source "${join(ROOT, "src/lib/dm-config.sh")}" && dm_config_load && printf '%s|%s' "$DM_REPO" "$(dm_config_status_option_id ready)"`], { cwd: d, encoding: "utf8" });
+  assert.equal(existsSync(pwned), false);
+  assert.equal(out, `${cfg.repo}|it's`);
+});
+
+test("dm-init sets the five statuses on the project's built-in Status field, no extra field", () => {
+  const d = mkdtempSync(join(tmpdir(), "init-"));
+  const git = (...a) => execFileSync("git", a, { cwd: d, stdio: "pipe" });
+  git("init", "-q", "-b", "main");
+  git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-q", "--allow-empty", "-m", "init");
+  const bin = join(d, "bin");
+  mkdirSync(bin);
+  const log = join(d, "gh.log");
+  // Records every call; answers the project calls dm-init makes.
+  writeFileSync(join(bin, "gh"), `#!/bin/sh
+printf '%s\\n' "$*" >> "${log}"
+case "$*" in
+  *"project create"*) echo '{"id":"PVT_new","number":7}' ;;
+  *"project field-list"*) echo '{"fields":[{"id":"F_title","name":"Title","type":"ProjectV2Field"},{"id":"F_status","name":"Status","type":"ProjectV2SingleSelectField","options":[{"id":"o","name":"Todo"}]}]}' ;;
+  *"api graphql"*) echo '{"data":{"updateProjectV2Field":{"projectV2Field":{"options":[{"id":"b","name":"backlog"},{"id":"r","name":"ready"},{"id":"p","name":"in progress"},{"id":"t","name":"test"},{"id":"s","name":"shipped"}]}}}}' ;;
+  *"project link"*) ;;
+  *) echo "unhandled: $*" >&2; exit 98 ;;
+esac
+`);
+  chmodSync(join(bin, "gh"), 0o755);
+  execFileSync("bash", [INIT, "run", "--no-remote", "--yes", "--owner", "acme", "--repo", "app"], {
+    cwd: d,
+    stdio: "pipe",
+    env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@t", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@t" },
+  });
+  const cfg = JSON.parse(readFileSync(join(d, ".dm/config.json"), "utf8"));
+  assert.equal(cfg.status_field_id, "F_status");
+  assert.deepEqual(cfg.status_option_ids, { backlog: "b", ready: "r", "in progress": "p", test: "t", shipped: "s" });
+  const calls = readFileSync(log, "utf8");
+  assert.doesNotMatch(calls, /field-create/);
+  assert.match(calls, /updateProjectV2Field\(input:\{fieldId:\$field/);
+  assert.match(calls, /field=F_status/);
+});
+
+test("a child's status-set moves its parent US, from one board read", () => {
+  const family = (childStatus) => appDir([
+    { title: "[s01-x] Parent", number: 1, projectItems: [{ id: "P1", status: { optionId: "opt1", name: "backlog" } }] },
+    { title: "[s01-x/t01-a] A", number: 2, projectItems: [{ id: "P2", status: { optionId: "opt1", name: "backlog" } }] },
+    { title: "[s01-x/t02-b] B", number: 3, projectItems: [{ id: "P3", status: { optionId: "opt1", name: childStatus } }] },
+    { title: "[s02-y] Other", number: 4, projectItems: [{ id: "P4", status: { optionId: "opt1", name: "backlog" } }] },
+  ]);
+  const parentOf = (statePath, n = 1) =>
+    JSON.parse(readFileSync(statePath, "utf8")).issues.find((i) => i.number === n).projectItems[0].status.name;
+
+  const ready = family("backlog");
+  runBoard(ready.d, ready.bin, ready.statePath, ["status-set", "s01-x/t01-a", "ready"]);
+  assert.equal(parentOf(ready.statePath), "in progress");
+  assert.equal(parentOf(ready.statePath, 4), "backlog");
+  assert.equal(JSON.parse(readFileSync(ready.statePath, "utf8")).list_calls, 1);
+
+  const last = family("shipped");
+  runBoard(last.d, last.bin, last.statePath, ["status-set", "s01-x/t01-a", "shipped"]);
+  assert.equal(parentOf(last.statePath), "shipped");
 });
